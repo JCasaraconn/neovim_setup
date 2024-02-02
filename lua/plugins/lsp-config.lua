@@ -13,12 +13,14 @@ return {
 			auto_install = true,
 		},
 	},
-  {
-		'folke/neodev.nvim',
+	{
+		"folke/neodev.nvim",
 	},
 	{
-    'j-hui/fidget.nvim', tag='legacy', opts = {}
-  },
+		"j-hui/fidget.nvim",
+		tag = "legacy",
+		opts = {},
+	},
 	{
 		"neovim/nvim-lspconfig",
 		event = { "BufReadPre", "BufNewFile" },
@@ -124,13 +126,13 @@ return {
 			lspconfig.lua_ls.setup({
 				capabilities = capabilities,
 			})
-      local opts = {
-        on_attach = on_attach,
-        capabilities = capabilities,
-        flags = {
-          debounce_text_changes = 150,
-        },
-      }
+			local opts = {
+				on_attach = on_attach,
+				capabilities = capabilities,
+				flags = {
+					debounce_text_changes = 150,
+				},
+			}
 		end,
 	},
 }
