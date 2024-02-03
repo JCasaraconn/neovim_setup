@@ -1,5 +1,6 @@
 return {
 	"nvim-neo-tree/neo-tree.nvim",
+	event = "VimEnter",
 	branch = "v3.x",
 	dependencies = {
 		"nvim-lua/plenary.nvim",
@@ -51,9 +52,7 @@ return {
 			},
 		})
 		require("maximize").setup({})
-		vim.keymap.set("n", "<Leader>m", "<Cmd>lua require('maximize').toggle()<CR>", { noremap = true, silent = true })
-		vim.keymap.set("n", "<leader>nt", ":Neotree filesystem reveal left<CR>", {})
+		vim.keymap.set("n", "<leader>nt", ":Neotree toggle<CR>", {})
 		vim.keymap.set("n", "<leader>bf", ":Neotree buffers reveal float<CR>", {})
-		vim.cmd([[nnoremap \ :Neotree reveal<cr>]])
 	end,
 }

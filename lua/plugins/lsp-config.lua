@@ -14,6 +14,13 @@ return {
 		},
 	},
 	{
+		"jay-babu/mason-null-ls.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		config = function()
+			require("null-ls.config")
+		end,
+	},
+	{
 		"folke/neodev.nvim",
 	},
 	{
@@ -82,12 +89,6 @@ return {
 				clangd = {
 					cmd = { "clangd", "-config-file=~/.config/clangd/config.yaml" },
 				},
-				lua_ls = {
-					Lua = {
-						workspace = { checkThirdParty = false },
-						telemetry = { enable = false },
-					},
-				},
 			}
 
 			-- Setup neovim lua configuration
@@ -99,6 +100,12 @@ return {
 
 			-- Setup mason so it can manage external tooling
 			require("mason").setup()
+
+			-- Setup mason-null-ls so it can manage formatters and linters independently of LSPs
+			require("mason-null-ls").setup({
+				ensure_installed = { "flake8", "stylua", "isort", "yapf", "prettier" },
+				automatic_installation = true,
+			})
 
 			-- Ensure the servers above are installed
 			local mason_lspconfig = require("mason-lspconfig")
@@ -116,23 +123,6 @@ return {
 					})
 				end,
 			})
-
-			lspconfig.tsserver.setup({
-				capabilities = capabilities,
-			})
-			lspconfig.html.setup({
-				capabilities = capabilities,
-			})
-			lspconfig.lua_ls.setup({
-				capabilities = capabilities,
-			})
-			local opts = {
-				on_attach = on_attach,
-				capabilities = capabilities,
-				flags = {
-					debounce_text_changes = 150,
-				},
-			}
 		end,
 	},
 }
