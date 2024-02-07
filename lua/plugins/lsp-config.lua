@@ -110,15 +110,11 @@ return {
 				ensure_installed = vim.tbl_keys(servers),
 			})
 			lspconfig.tsserver.setup({
-				capabilities = capabilities
+				capabilities = capabilities,
 			})
 			lspconfig.html.setup({
-				capabilities = capabilities
+				capabilities = capabilities,
 			})
-			lspconfig.lua_ls.setup({
-				capabilities = capabilities
-			})
-
 
 			mason_lspconfig.setup_handlers({
 				function(server_name)
