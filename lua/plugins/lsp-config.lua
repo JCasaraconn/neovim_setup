@@ -99,7 +99,7 @@ return {
 
 			-- Setup mason-null-ls so it can manage formatters and linters independently of LSPs
 			require("mason-null-ls").setup({
-				ensure_installed = { "flake8", "stylua", "isort", "yapf", "prettier" },
+				ensure_installed = { "flake8", "stylua", "isort", "yapf", "prettier", "yamllint" },
 				automatic_installation = true,
 			})
 
