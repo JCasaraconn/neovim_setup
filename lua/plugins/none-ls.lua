@@ -6,9 +6,10 @@ return {
 		null_ls.setup({
 			sources = {
 				null_ls.builtins.formatting.stylua, -- formatter for lua
-				null_ls.builtins.formatting.yapf.with({
-					args = { "--style=pep8" },
-				}), -- formatter for python
+				-- null_ls.builtins.formatting.yapf.with({
+				--	args = { "--style=pep8" },
+				-- }), -- formatter for python
+				null_ls.builtins.formatting.autopep8, -- formatter for python
 				null_ls.builtins.formatting.isort, -- sort imports for python
 				null_ls.builtins.formatting.prettier, -- formatter for lots of files
 				null_ls.builtins.formatting.beautysh, -- formatter for shell
