@@ -15,6 +15,7 @@ require("vim-options")
 require("lazy").setup({
 	spec = {
 		{ import = "plugins" }, -- loads all plugins in plugins/
+		{ "nvim-neotest/nvim-nio" },
 	},
 	defaults = {
 		lazy = false, -- plugins are not lazy loaded by defaults

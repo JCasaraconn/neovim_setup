@@ -1,34 +1,5 @@
 return {
 	{
-		"williamboman/mason.nvim",
-		cmd = "Mason", -- load mason when running :Mason command
-		config = function()
-			require("mason").setup()
-		end,
-	},
-	{
-		"williamboman/mason-lspconfig.nvim",
-		event = "VeryLazy", -- load this after critical plugins
-		opts = {
-			auto_install = true,
-		},
-	},
-	{
-		"jay-babu/mason-null-ls.nvim",
-		event = { "BufReadPre", "BufNewFile" },
-		config = function()
-			require("null-ls.config")
-		end,
-	},
-	{
-		"folke/neodev.nvim",
-	},
-	{
-		"j-hui/fidget.nvim",
-		tag = "legacy",
-		opts = {},
-	},
-	{
 		"neovim/nvim-lspconfig",
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
