@@ -1,24 +1,22 @@
 return {
-	"nvimtools/none-ls.nvim",
-	event = { "BufReadPre", "BufNewFile" }, -- load the plugin when entering a buffer
-	config = function()
-		local null_ls = require("null-ls")
-		null_ls.setup({
-			sources = {
-				null_ls.builtins.formatting.stylua, -- formatter for lua
-				-- null_ls.builtins.formatting.yapf.with({
-				--	args = { "--style=pep8" },
-				-- }), -- formatter for python
-				null_ls.builtins.formatting.autopep8, -- formatter for python
-				null_ls.builtins.formatting.isort, -- sort imports for python
-				null_ls.builtins.formatting.prettier, -- formatter for lots of files
-				null_ls.builtins.formatting.beautysh, -- formatter for shell
-				null_ls.builtins.diagnostics.flake8, -- linter for python
-				null_ls.builtins.diagnostics.yamllint, -- linter for yaml
-				null_ls.builtins.diagnostics.shellcheck, -- linter for bash
-			},
-		})
+  "nvimtools/none-ls.nvim",
+  config = function()
+    local null_ls = require("null-ls")
+    null_ls.setup({
+      sources = {
+        null_ls.builtins.formatting.stylua,     -- Lua formatter
+        -- null_ls.builtins.formatting.autopep8,   -- Python formatter
+        null_ls.builtins.formatting.isort,      -- Python import sorter
+        null_ls.builtins.formatting.prettier,   -- Formatter for various files
+        -- null_ls.builtins.formatting.beautysh,   -- Shell script formatter
+        -- null_ls.builtins.diagnostics.flake8,    -- Python linter
+        null_ls.builtins.diagnostics.yamllint,  -- YAML linter
+        -- null_ls.builtins.diagnostics.shellcheck -- Shell script linter
+      },
+    })
 
-		vim.keymap.set("n", "<leader>gf", vim.lsp.buf.format, {})
-	end,
+    -- Example key mapping for formatting
+    vim.keymap.set("n", "<leader>gf", vim.lsp.buf.format, {})
+  end,
 }
+
