@@ -78,6 +78,13 @@ vim.keymap.set("n", "<Leader>j", ":wincmd j<Return>", { noremap = true, silent =
 vim.keymap.set("n", "<Leader>k", ":wincmd k<Return>", { noremap = true, silent = true })
 vim.keymap.set("n", "<Leader>l", ":wincmd l<Return>", { noremap = true, silent = true })
 
+-- Navigating the tabs in neovim
+vim.api.nvim_set_keymap('n', '<Leader>tn', ':tabnext<CR>', { noremap = true, silent = true, desc = "tabnext" })
+vim.api.nvim_set_keymap('n', '<Leader>tp', ':tabprevious<CR>', { noremap = true, silent = true, desc = "tabprevious" })
+vim.api.nvim_set_keymap('n', '<Leader>to', ':tabonly<CR>', { noremap = true, silent = true, desc = "tabonly" })
+vim.api.nvim_set_keymap('n', '<Leader>tc', ':tabclose<CR>', { noremap = true, silent = true, desc = "tabclose" })
+
+
 -- [[ Highlight on yank ]]
 -- See `:help vim.highlight.on_yank()`
 local highlight_group = vim.api.nvim_create_augroup("YankHighlight", { clear = true })
