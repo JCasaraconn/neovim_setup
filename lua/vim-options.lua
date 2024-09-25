@@ -5,6 +5,9 @@ vim.cmd("set shiftwidth=2")
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+-- Point to vim-notes directory
+vim.g.notes_directories = {"~/Documents/Notes"}
+
 -- Use vimdiff with diff-so-fancy for git diffs
 vim.g.diffopt_external = "git diff --no-index --color-words --color-moved"
 vim.g.diffopt_program = "vim-diff-so-fancy"

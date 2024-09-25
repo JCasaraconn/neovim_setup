@@ -80,7 +80,7 @@ return {
 			mason_lspconfig.setup({
 				ensure_installed = vim.tbl_keys(servers),
 			})
-			lspconfig.tsserver.setup({
+			lspconfig.ts_ls.setup({
 				capabilities = capabilities,
 			})
 			lspconfig.html.setup({
