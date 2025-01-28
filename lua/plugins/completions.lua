@@ -69,4 +69,25 @@ return {
 			})
 		end,
 	},
+	{
+		"neovim/nvim-lspconfig",
+		config = function()
+			local lspconfig = require("lspconfig")
+			local capabilities = require("cmp_nvim_lsp").default_capabilities()
+
+			-- Configure jedi-language-server
+			lspconfig.jedi_language_server.setup({
+				capabilities = capabilities,
+				on_attach = function(client, bufnr)
+					-- Example: Keymaps for LSP navigation
+					local opts = { noremap = true, silent = true, buffer = bufnr }
+					vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+					vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+					vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+					vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+					vim.keymap.set("n", "<Leader>rn", vim.lsp.buf.rename, opts)
+				end,
+			})
+		end,
+	},
 }
