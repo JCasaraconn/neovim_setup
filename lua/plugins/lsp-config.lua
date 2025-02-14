@@ -70,7 +70,7 @@ return {
 
 			-- Setup mason-null-ls so it can manage formatters and linters independently of LSPs
 			require("mason-null-ls").setup({
-				ensure_installed = { "stylua", "yamllint", "python_lsp_server" },
+				ensure_installed = { "stylua", "debugpy", "yamllint", "python_lsp_server" },
 				automatic_installation = true,
 			})
 
