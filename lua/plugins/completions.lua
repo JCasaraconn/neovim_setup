@@ -76,7 +76,7 @@ return {
 			local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
 			-- Configure jedi-language-server
-			lspconfig.jedi_language_server.setup({
+			lspconfig.python_lsp_server.setup({
 				capabilities = capabilities,
 				on_attach = function(client, bufnr)
 					-- Example: Keymaps for LSP navigation
