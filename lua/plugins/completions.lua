@@ -22,6 +22,7 @@ return {
 		config = function()
 			local cmp = require("cmp")
 			local luasnip = require("luasnip")
+
 			require("luasnip.loaders.from_vscode").lazy_load()
 
 			cmp.setup({
@@ -87,6 +88,20 @@ return {
 					vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
 					vim.keymap.set("n", "<Leader>rn", vim.lsp.buf.rename, opts)
 				end,
+			})
+		end,
+	},
+	{
+		dir = "~/.config/nvim/lua/plugins/jedi-cmp", -- local plugin path
+		ft = { "yaml", "yml" },
+		config = function()
+			local cmp = require("cmp")
+			cmp.setup.filetype({ "yaml", "yml" }, {
+				sources = {
+					{ name = "jedi" },
+					{ name = "buffer" },
+					{ name = "path" },
+				},
 			})
 		end,
 	},

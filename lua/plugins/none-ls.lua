@@ -6,6 +6,7 @@ return {
 			sources = {
 				null_ls.builtins.formatting.stylua, -- Lua formatter
 				null_ls.builtins.formatting.prettier, -- Formatter for various files
+				null_ls.builtins.formatting.isort,
 				null_ls.builtins.diagnostics.yamllint, -- YAML linter
 			},
 		})
