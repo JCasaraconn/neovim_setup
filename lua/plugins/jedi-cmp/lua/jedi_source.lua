@@ -1,59 +1,143 @@
-local source = {}
+local uv = vim.loop
+local cmp = require("cmp")
 
-source.new = function()
-	return setmetatable({}, { __index = source })
+local M = {}
+M.__index = M
+
+local python_cmd = "python3"
+local script_path = vim.fn.stdpath("config") .. "/lua/scripts/jedi_complete.py"
+local log_path = vim.fn.stdpath("config") .. "/jedi_source.log"
+
+local LOG_ENABLED = false -- Set to false to disable logging
+
+local function log(msg)
+	if not LOG_ENABLED then
+		return
+	end
+	local fd = uv.fs_open(log_path, "a", 438) -- 438 = 0o666 permissions
+	if fd then
+		uv.fs_write(fd, os.date("%Y-%m-%d %H:%M:%S") .. " - " .. msg .. "\n")
+		uv.fs_close(fd)
+	end
 end
 
-source.complete = function(self, request, callback)
-	local line = vim.api.nvim_get_current_line()
-	local col = vim.api.nvim_win_get_cursor(0)[2]
-	local before_cursor = line:sub(1, col)
-	local expr = before_cursor:match("([%w_%.]+)$") or ""
+function M.new()
+	local self = setmetatable({}, M)
 
-	local script_path = vim.fn.stdpath("config") .. "/lua/scripts/jedi_complete.py"
+	self.stdin = uv.new_pipe(false)
+	self.stdout = uv.new_pipe(false)
+	self.stderr = uv.new_pipe(false)
+	self.handle = nil
+	self.buf = ""
+	self.pending_callback = nil
 
-	vim.fn.jobstart({ "python3", script_path, expr }, {
-		stdout_buffered = true,
-		on_stdout = function(_, data)
-			if not data then
-				return
+	log("Starting Python Jedi daemon: " .. python_cmd .. " " .. script_path)
+
+	self.handle = uv.spawn(python_cmd, {
+		args = { script_path },
+		stdio = { self.stdin, self.stdout, self.stderr },
+	}, function(code, signal)
+		log(string.format("Python Jedi daemon exited with code %d, signal %d", code, signal))
+		if self.pending_callback then
+			self.pending_callback({ items = {}, isIncomplete = false })
+			self.pending_callback = nil
+		end
+		self.stdin:close()
+		self.stdout:close()
+		self.stderr:close()
+		self.handle:close()
+		self.handle = nil
+	end)
+
+	self.stdout:read_start(function(err, chunk)
+		if err then
+			log("Error reading stdout: " .. err)
+			if self.pending_callback then
+				self.pending_callback({ items = {}, isIncomplete = false })
+				self.pending_callback = nil
 			end
+			return
+		end
+		if chunk then
+			self.buf = self.buf .. chunk
+			while true do
+				local nl_pos = self.buf:find("\n")
+				if not nl_pos then
+					log("No newline yet, waiting for more data...")
+					break
+				end
+				local line = self.buf:sub(1, nl_pos - 1)
+				self.buf = self.buf:sub(nl_pos + 1)
 
-			local output = table.concat(data, "\n")
-			if output == "" then
-				return
+				-- Trim whitespace (optional, if you want to be safe)
+				log("recieved the following line: " .. line)
+				-- line = line:match("^%s*(.-)%s*$")
+
+				if line == "" then
+					log("Skipping empty line")
+				else
+					local ok, res = pcall(vim.json.decode, line)
+					if ok then
+						log("Received JSON completion response: " .. vim.inspect(res))
+						if self.pending_callback then
+							local items = {}
+							for _, c in ipairs(res) do
+								table.insert(items, {
+									label = c.name,
+									kind = cmp.lsp.CompletionItemKind.Text,
+									detail = c.description or "",
+								})
+							end
+							self.pending_callback({ items = items, isIncomplete = false })
+							log("Completion callback invoked with " .. tostring(#items) .. " items")
+							self.pending_callback = nil
+						else
+							log("No pending callback for the completion response")
+						end
+					else
+						log("JSON parse failed: " .. tostring(res))
+						log("Offending line: " .. line)
+					end
+				end
 			end
+		end
+	end)
 
-			local ok, decoded = pcall(vim.fn.json_decode, output)
-			if not ok then
-				vim.notify("JSON decode failed", vim.log.levels.ERROR)
-				return
-			end
+	self.stderr:read_start(function(err, chunk)
+		if chunk then
+			log("Python stderr: " .. chunk:gsub("\n", " "))
+		end
+	end)
 
-			local items = {}
-			for _, entry in ipairs(decoded) do
-				table.insert(items, {
-					label = entry.name,
-					kind = require("cmp.types.lsp").CompletionItemKind[entry.type:upper()] or 1,
-					documentation = entry.description,
-				})
-			end
-
-			callback({ items = items, isIncomplete = false })
-		end,
-
-		on_stderr = function(_, data)
-			if data then
-				vim.notify("Jedi stderr: " .. table.concat(data, "\n"), vim.log.levels.WARN)
-			end
-		end,
-
-		on_exit = function(_, code)
-			if code ~= 0 then
-				vim.notify("Jedi script failed with code: " .. code, vim.log.levels.ERROR)
-			end
-		end,
-	})
+	return self
 end
 
-return source
+function M:complete(request, callback)
+	local line = request.context.cursor_before_line
+	log("this is the line: " .. line)
+	if line == "" or not self.handle then
+		log("No input or daemon not running; returning empty completion")
+		callback({ items = {}, isIncomplete = false })
+		return
+	end
+
+	if self.pending_callback then
+		log("Previous completion request still pending; dropping this one")
+		callback({ items = {}, isIncomplete = false })
+		return
+	end
+
+	log("Sending completion request for prefix: " .. line)
+	self.pending_callback = callback
+	self.stdin:write(line .. "\n")
+end
+
+function M:get_trigger_characters()
+	return { "." }
+end
+
+function M:resolve() end
+
+function M:execute() end
+
+return M
