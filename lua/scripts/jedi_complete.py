@@ -79,6 +79,7 @@ def get_completions(module_path: str):
     return [
         {'name': c.name, 'type': c.type, 'description': c.description}
         for c in completions
+        if not (c.name.startswith('__') and c.name.endswith('__'))
     ]
 
 
