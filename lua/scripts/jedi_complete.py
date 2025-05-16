@@ -5,6 +5,7 @@ import io
 import json
 import os
 import sys
+import types
 
 import jedi
 
@@ -53,34 +54,53 @@ def import_module_by_name(name):
         return None
 
 
+def get_filtered_completions_from_globals(globals_dict, target_module_name):
+    completions = []
+    for name, obj in globals_dict.items():
+        if name.startswith('_'):
+            continue
+
+        module_of_obj = getattr(obj, '__module__', None)
+
+        # Allow modules *only* if they are part of the target package
+        if isinstance(obj, types.ModuleType):
+            if obj.__name__.startswith(target_module_name):
+                completions.append({
+                    'name': name,
+                    'type': 'module',
+                    'module': obj.__name__,
+                    'description': f"module: {obj.__name__}",
+                })
+            continue
+
+        # Allow functions/classes defined in the target package
+        if module_of_obj and module_of_obj.startswith(target_module_name):
+            completions.append({
+                'name': name,
+                'type': type(obj).__name__,
+                'module': module_of_obj,
+                'description': str(obj),
+            })
+
+    return completions
+
+
 def get_completions(module_path: str):
-    from importlib import import_module
-
-    def import_module_by_name(name):
-        try:
-            return import_module(name)
-        except ImportError:
-            return None
-
-    top_module = module_path.split('.')[0]
-
-    with suppress_stdout():
-        module_obj = import_module_by_name(top_module)
-
-    namespaces = [{top_module: module_obj}] if module_obj else [{}]
-
+    """
+    Get filtered completions from the given Python module path.
+    Returns only user-defined symbols and filters out built-ins and imported modules.
+    """
+    module_path = module_path.rstrip('.')
     try:
-        with suppress_stdout():
-            script = jedi.Interpreter(module_path, namespaces=namespaces)
-            completions = script.complete()
-    except Exception:
+        module = importlib.import_module(module_path)
+        globals_dict = module.__dict__
+        completions = get_filtered_completions_from_globals(
+            globals_dict, module_path)
+    except Exception as e:
+        print(f"Error importing or inspecting module: {e}")
         completions = []
 
-    return [
-        {'name': c.name, 'type': c.type, 'description': c.description}
-        for c in completions
-        if not (c.name.startswith('__') and c.name.endswith('__'))
-    ]
+    return completions
 
 
 def main():

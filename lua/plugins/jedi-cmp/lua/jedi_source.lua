@@ -4,7 +4,7 @@ local cmp = require("cmp")
 local M = {}
 M.__index = M
 
-local LOG_ENABLED = true -- Set to false to disable logging
+local LOG_ENABLED = false -- Set to false to disable logging
 local log_path = vim.fn.stdpath("config") .. "/jedi_source.log"
 
 local function log(msg)
