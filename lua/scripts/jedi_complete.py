@@ -1,10 +1,21 @@
 # ~/.config/nvim/lua/scripts/jedi_complete.py
+import contextlib
 import importlib
+import io
 import json
 import os
 import sys
 
 import jedi
+
+LOGGING = False
+
+
+@contextlib.contextmanager
+def suppress_stdout():
+    with contextlib.redirect_stdout(io.StringIO()):
+        yield
+
 
 # Suppress TensorFlow and other verbose logs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Error only
@@ -29,9 +40,10 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 
-# with open("/tmp/jedi_env_debug.log", "w") as f:
-#     f.write("PYTHONPATH=" + os.environ.get("PYTHONPATH", "") + "\n")
-#     f.write("sys.path:\n" + "\n".join(os.sys.path))
+if LOGGING:
+    with open("/tmp/jedi_env_debug.log", "w") as f:
+        f.write("PYTHONPATH=" + os.environ.get("PYTHONPATH", "") + "\n")
+        f.write("sys.path:\n" + "\n".join(os.sys.path))
 
 
 def import_module_by_name(name):
@@ -42,13 +54,25 @@ def import_module_by_name(name):
 
 
 def get_completions(module_path: str):
+    from importlib import import_module
+
+    def import_module_by_name(name):
+        try:
+            return import_module(name)
+        except ImportError:
+            return None
+
     top_module = module_path.split('.')[0]
-    module_obj = import_module_by_name(top_module)
+
+    with suppress_stdout():
+        module_obj = import_module_by_name(top_module)
+
     namespaces = [{top_module: module_obj}] if module_obj else [{}]
 
     try:
-        script = jedi.Interpreter(module_path, namespaces=namespaces)
-        completions = script.complete()
+        with suppress_stdout():
+            script = jedi.Interpreter(module_path, namespaces=namespaces)
+            completions = script.complete()
     except Exception:
         completions = []
 

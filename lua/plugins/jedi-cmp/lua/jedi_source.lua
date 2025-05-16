@@ -4,7 +4,7 @@ local cmp = require("cmp")
 local M = {}
 M.__index = M
 
-local LOG_ENABLED = false -- Set to false to disable logging
+local LOG_ENABLED = true -- Set to false to disable logging
 local log_path = vim.fn.stdpath("config") .. "/jedi_source.log"
 
 local function log(msg)
@@ -71,8 +71,6 @@ function M.new()
 				local line = self.buf:sub(1, nl_pos - 1)
 				self.buf = self.buf:sub(nl_pos + 1)
 
-				-- Trim whitespace (optional, if you want to be safe)
-				log("recieved the following line: " .. line)
 				-- line = line:match("^%s*(.-)%s*$")
 
 				if line == "" then
@@ -116,7 +114,16 @@ end
 
 function M:complete(request, callback)
 	local line = request.context.cursor_before_line
+
+	local cursor_col = request.context.cursor.col
+
+	-- Only trigger when the last typed character before the cursor is "."
+	if not line:sub(cursor_col - 1, cursor_col - 1):match("%.") then
+		return callback() -- skip completion unless "." was typed
+	end
+
 	log("this is the line: " .. line)
+
 	if line == "" or not self.handle then
 		log("No input or daemon not running; returning empty completion")
 		callback({ items = {}, isIncomplete = false })
