@@ -22,7 +22,7 @@ local python_cmd = vim.fn.trim(vim.fn.system("which python"))
 
 log("Using python at: " .. python_cmd)
 
-local script_path = vim.fn.stdpath("config") .. "/lua/scripts/jedi_complete.py"
+local script_path = vim.fn.stdpath("config") .. "/lua/plugins/jedi-cmp/scripts/jedi_complete.py"
 function M.new()
 	local self = setmetatable({}, M)
 
