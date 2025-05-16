@@ -4,11 +4,8 @@ local cmp = require("cmp")
 local M = {}
 M.__index = M
 
-local python_cmd = "python3"
-local script_path = vim.fn.stdpath("config") .. "/lua/scripts/jedi_complete.py"
-local log_path = vim.fn.stdpath("config") .. "/jedi_source.log"
-
 local LOG_ENABLED = false -- Set to false to disable logging
+local log_path = vim.fn.stdpath("config") .. "/jedi_source.log"
 
 local function log(msg)
 	if not LOG_ENABLED then
@@ -21,6 +18,11 @@ local function log(msg)
 	end
 end
 
+local python_cmd = vim.fn.trim(vim.fn.system("which python"))
+
+log("Using python at: " .. python_cmd)
+
+local script_path = vim.fn.stdpath("config") .. "/lua/scripts/jedi_complete.py"
 function M.new()
 	local self = setmetatable({}, M)
 
