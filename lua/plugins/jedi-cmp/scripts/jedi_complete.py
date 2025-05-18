@@ -1,26 +1,11 @@
 # ~/.config/nvim/lua/scripts/jedi_complete.py
-import contextlib
-import importlib
-import io
 import json
 import os
 import sys
-import types
 
 import jedi
 
 LOGGING = False
-
-
-@contextlib.contextmanager
-def suppress_stdout():
-    with contextlib.redirect_stdout(io.StringIO()):
-        yield
-
-
-# Suppress TensorFlow and other verbose logs
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # Error only
-sys.stderr = open(os.devnull, 'w')  # Redirect all stderr to null
 
 
 def find_project_root(start_path=None):
@@ -47,65 +32,48 @@ if LOGGING:
         f.write("sys.path:\n" + "\n".join(os.sys.path))
 
 
-def import_module_by_name(name):
-    try:
-        return importlib.import_module(name)
-    except ImportError:
-        return None
+def is_private_method(text: str) -> bool:
+    if text.startswith('_'):
+        return True
+    return False
 
 
-def get_filtered_completions_from_globals(globals_dict, target_module_name):
-    completions = []
-    for name, obj in globals_dict.items():
-        if name.startswith('_'):
+def is_dunder_method(text: str) -> bool:
+    if text.startswith('__'):
+        return True
+    return False
+
+
+def passes_filters(text: str) -> bool:
+    if not is_private_method(text) and not is_dunder_method(text):
+        return True
+    return False
+
+
+def get_completions(text: str):
+    text = text.rstrip('.')
+    split_text = text.rsplit('.', 1)
+    code = f"import {split_text[0]}\n{text}."
+    line = 2
+    column = len('.'.join(split_text)) + 1
+    script = jedi.Script(code=code, path=None)
+    completions = script.complete(line, column)
+    json_output = []
+    for c in completions:
+        if not passes_filters(c.name):
             continue
-
-        module_of_obj = getattr(obj, '__module__', None)
-
-        # Allow modules *only* if they are part of the target package
-        if isinstance(obj, types.ModuleType):
-            if obj.__name__.startswith(target_module_name):
-                completions.append({
-                    'name': name,
-                    'type': 'module',
-                    'module': obj.__name__,
-                    'description': f"module: {obj.__name__}",
-                })
-            continue
-
-        # Allow functions/classes defined in the target package
-        if module_of_obj and module_of_obj.startswith(target_module_name):
-            completions.append({
-                'name': name,
-                'type': type(obj).__name__,
-                'module': module_of_obj,
-                'description': str(obj),
-            })
-
-    return completions
-
-
-def get_completions(module_path: str):
-    """
-    Get filtered completions from the given Python module path.
-    Returns only user-defined symbols and filters out built-ins and imported modules.
-    """
-    module_path = module_path.rstrip('.')
-    try:
-        module = importlib.import_module(module_path)
-        globals_dict = module.__dict__
-        completions = get_filtered_completions_from_globals(
-            globals_dict, module_path)
-    except Exception as e:
-        print(f"Error importing or inspecting module: {e}")
-        completions = []
-
-    return completions
+        json_output.append({
+            'name': c.name,
+            'type': c.type,
+            'module': c.module_name,
+            'description': str(c.description),
+        })
+    return json_output
 
 
 def main():
     for line in sys.stdin:
-        module_path = line.strip()
+        module_path = line.strip().split(' ')[-1]
         results = get_completions(module_path)
         print(json.dumps(results), flush=True)
 
