@@ -21,17 +21,6 @@ def find_project_root(start_path=None):
     return start_path  # fallback
 
 
-project_root = find_project_root()
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-
-if LOGGING:
-    with open("/tmp/jedi_env_debug.log", "w") as f:
-        f.write("PYTHONPATH=" + os.environ.get("PYTHONPATH", "") + "\n")
-        f.write("sys.path:\n" + "\n".join(os.sys.path))
-
-
 def is_private_method(text: str) -> bool:
     if text.startswith('_'):
         return True
@@ -72,6 +61,15 @@ def get_completions(text: str):
 
 
 def main():
+    project_root = find_project_root()
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
+    if LOGGING:
+        with open("/tmp/jedi_env_debug.log", "w") as f:
+            f.write("PYTHONPATH=" + os.environ.get("PYTHONPATH", "") + "\n")
+            f.write("sys.path:\n" + "\n".join(os.sys.path))
+
     for line in sys.stdin:
         module_path = line.strip().split(' ')[-1]
         results = get_completions(module_path)
