@@ -89,8 +89,13 @@ function M.new()
 						for _, c in ipairs(res) do
 							table.insert(items, {
 								label = c.name,
-								kind = cmp.lsp.CompletionItemKind.Text,
-								detail = c.description or "",
+								kind = cmp.lsp.CompletionItemKind[c.type:sub(1, 1):upper() .. c.type:sub(2)]
+										or cmp.lsp.CompletionItemKind.Text,
+								detail = c.signature ~= "" and c.signature or nil,
+								documentation = {
+									kind = "markdown",
+									value = c.docstring,
+								} or nil,
 							})
 						end
 						self.pending_callback({ items = items, isIncomplete = false })
@@ -150,7 +155,9 @@ function M:get_trigger_characters()
 	return { "." }
 end
 
-function M:resolve() end
+function M:resolve(completion_item, callback)
+	callback(completion_item)
+end
 
 function M:execute() end
 

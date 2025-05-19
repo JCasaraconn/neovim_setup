@@ -51,11 +51,20 @@ def get_completions(text: str):
     for c in completions:
         if not passes_filters(c.name):
             continue
+        docstring = c.docstring(raw=True)
+        signatures = c.get_signatures()
+        signature = ""
+
+        if signatures:
+            signature = signatures[0].to_string()
+
         json_output.append({
-            'name': c.name,
-            'type': c.type,
-            'module': c.module_name,
-            'description': str(c.description),
+            "name": c.name,
+            "type": c.type,
+            "module": c.module_name,
+            "description": str(c.description),
+            "docstring": docstring,
+            "signature": signature,
         })
     return json_output
 
