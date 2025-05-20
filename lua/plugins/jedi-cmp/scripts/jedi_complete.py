@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+from functools import lru_cache
 
 import jedi
 
@@ -39,6 +40,7 @@ def passes_filters(text: str) -> bool:
     return False
 
 
+@lru_cache(maxsize=None)
 def get_completions(text: str):
     text = text.rstrip('.')
     split_text = text.rsplit('.', 1)
