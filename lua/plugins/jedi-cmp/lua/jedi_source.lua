@@ -61,8 +61,11 @@ function M.new()
 				label = c.name,
 				kind = cmp.lsp.CompletionItemKind[c.type:sub(1, 1):upper() .. c.type:sub(2)]
 						or cmp.lsp.CompletionItemKind.Text,
-				detail = c.signature ~= "" and c.signature or nil,
+				-- detail = c.signature ~= "" and c.signature or nil,
+				detail= c.docstring,
 				documentation = { kind = "markdown", value = c.docstring },
+				insertText = c.signature or c.name,
+				insertTextFormat = cmp.lsp.InsertTextFormat.Snippet,
 			})
 		end
 		invoke_callback(items)

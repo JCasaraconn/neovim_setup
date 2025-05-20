@@ -40,13 +40,22 @@ def passes_filters(text: str) -> bool:
     return False
 
 
+def format_yaml_snippet(name, params):
+    lines = [f"{name}:"]
+    for i, param in enumerate(params, 1):
+        if param.name == "self":
+            continue  # skip self for methods
+        lines.append(f"    {param.name}: ${{{i}}}")
+    return "\n".join(lines)
+
+
 @lru_cache(maxsize=None)
 def get_completions(text: str):
     text = text.rstrip('.')
     split_text = text.rsplit('.', 1)
     code = f"import {split_text[0]}\n{text}."
     line = 2
-    column = len('.'.join(split_text)) + 1
+    column = len(text) + 1
     script = jedi.Script(code=code, path=None)
     completions = script.complete(line, column)
     json_output = []
@@ -55,10 +64,11 @@ def get_completions(text: str):
             continue
         docstring = c.docstring(raw=True)
         signatures = c.get_signatures()
-        signature = ""
 
+        snippet = c.name
         if signatures:
-            signature = signatures[0].to_string()
+            sig = signatures[0]
+            snippet = format_yaml_snippet(c.name, sig.params)
 
         json_output.append({
             "name": c.name,
@@ -66,7 +76,7 @@ def get_completions(text: str):
             "module": c.module_name,
             "description": str(c.description),
             "docstring": docstring,
-            "signature": signature,
+            "signature": snippet,
         })
     return json_output
 
