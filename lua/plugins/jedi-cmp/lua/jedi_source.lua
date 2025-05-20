@@ -27,15 +27,47 @@ log("Using python at: " .. python_cmd)
 -- Create a new Jedi completion source
 function M.new()
 	local self = setmetatable({}, M)
-
 	self.stdin = uv.new_pipe(false)
 	self.stdout = uv.new_pipe(false)
 	self.stderr = uv.new_pipe(false)
-	self.handle = nil
 	self.buf = ""
 	self.pending_callback = nil
 
 	log("Starting Python Jedi daemon: " .. python_cmd .. " " .. script_path)
+
+	local function invoke_callback(items)
+		if self.pending_callback then
+			self.pending_callback({ items = items or {}, isIncomplete = false })
+			self.pending_callback = nil
+		end
+	end
+
+	local function decode_line(line)
+		if line == "" then
+			log("Skipping empty line")
+			return
+		end
+		local ok, res = pcall(vim.json.decode, line)
+		if not ok then
+			log("JSON parse failed: " .. tostring(res))
+			log("Offending line: " .. line)
+			return
+		end
+
+		log("Received JSON response: " .. vim.inspect(res))
+		local items = {}
+		for _, c in ipairs(res) do
+			table.insert(items, {
+				label = c.name,
+				kind = cmp.lsp.CompletionItemKind[c.type:sub(1, 1):upper() .. c.type:sub(2)]
+						or cmp.lsp.CompletionItemKind.Text,
+				detail = c.signature ~= "" and c.signature or nil,
+				documentation = { kind = "markdown", value = c.docstring },
+			})
+		end
+		invoke_callback(items)
+		log("Completion callback invoked with " .. tostring(#items) .. " items")
+	end
 
 	-- Spawn the Python process
 	self.handle = uv.spawn(python_cmd, {
@@ -43,10 +75,7 @@ function M.new()
 		stdio = { self.stdin, self.stdout, self.stderr },
 	}, function(code, signal)
 		log(string.format("Python Jedi daemon exited with code %d, signal %d", code, signal))
-		if self.pending_callback then
-			self.pending_callback({ items = {}, isIncomplete = false })
-			self.pending_callback = nil
-		end
+		invoke_callback()
 		self.stdin:close()
 		self.stdout:close()
 		self.stderr:close()
@@ -58,57 +87,20 @@ function M.new()
 	self.stdout:read_start(function(err, chunk)
 		if err then
 			log("Error reading stdout: " .. err)
-			if self.pending_callback then
-				self.pending_callback({ items = {}, isIncomplete = false })
-				self.pending_callback = nil
-			end
-			return
+			return invoke_callback()
 		end
 		if not chunk then
 			return
 		end
-
 		self.buf = self.buf .. chunk
 		while true do
 			local nl_pos = self.buf:find("\n")
 			if not nl_pos then
 				break
 			end
-
 			local line = self.buf:sub(1, nl_pos - 1)
 			self.buf = self.buf:sub(nl_pos + 1)
-
-			if line == "" then
-				log("Skipping empty line")
-			else
-				local ok, res = pcall(vim.json.decode, line)
-				if ok then
-					log("Received JSON response: " .. vim.inspect(res))
-					if self.pending_callback then
-						local items = {}
-						for _, c in ipairs(res) do
-							table.insert(items, {
-								label = c.name,
-								kind = cmp.lsp.CompletionItemKind[c.type:sub(1, 1):upper() .. c.type:sub(2)]
-										or cmp.lsp.CompletionItemKind.Text,
-								detail = c.signature ~= "" and c.signature or nil,
-								documentation = {
-									kind = "markdown",
-									value = c.docstring,
-								} or nil,
-							})
-						end
-						self.pending_callback({ items = items, isIncomplete = false })
-						log("Completion callback invoked with " .. tostring(#items) .. " items")
-						self.pending_callback = nil
-					else
-						log("No pending callback")
-					end
-				else
-					log("JSON parse failed: " .. tostring(res))
-					log("Offending line: " .. line)
-				end
-			end
+			decode_line(line)
 		end
 	end)
 
@@ -125,28 +117,8 @@ end
 -- Completion entry point
 function M:complete(request, callback)
 	local line = request.context.cursor_before_line
-	local cursor_col = request.context.cursor.col
-
-	if not line:sub(cursor_col - 1, cursor_col - 1):match("%.") then
-		return callback() -- only trigger after "."
-	end
-
-	log("Completion triggered on line: " .. line)
-
-	if line == "" or not self.handle then
-		log("No input or daemon not running")
-		callback({ items = {}, isIncomplete = false })
-		return
-	end
-
-	if self.pending_callback then
-		log("Previous request still pending")
-		callback({ items = {}, isIncomplete = false })
-		return
-	end
-
-	self.pending_callback = callback
 	log("Sending line to Jedi daemon: " .. line)
+	self.pending_callback = callback
 	self.stdin:write(line .. "\n")
 end
 
