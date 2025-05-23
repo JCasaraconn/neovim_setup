@@ -98,3 +98,19 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	group = highlight_group,
 	pattern = "*",
 })
+
+
+-- function to toggle scroll bind and cursor bind
+vim.api.nvim_create_user_command("ToggleScrollBind", function()
+  local scrollbind = vim.wo.scrollbind
+  if scrollbind then
+    vim.cmd("windo set noscrollbind nocursorbind")
+    print("Scrollbind OFF")
+  else
+    vim.cmd("windo set scrollbind cursorbind")
+    print("Scrollbind ON")
+  end
+end, {})
+
+vim.keymap.set("n", "<leader>sb", ":ToggleScrollBind<CR>", { silent = true })
+
