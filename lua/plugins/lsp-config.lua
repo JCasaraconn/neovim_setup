@@ -60,6 +60,17 @@ return {
 				clangd = {
 					cmd = { "clangd", "-config-file=~/.config/clangd/config.yaml" },
 				},
+				pylsp = {
+					settings = {
+						pylsp = {
+							plugins = {
+								autopep8 = { enabled = false },
+								yapf = { enabled = false },
+								pycodestyle = { maxLineLength = 88 },
+							},
+						},
+					},
+				},
 			}
 
 			-- Setup neovim lua configuration
@@ -67,12 +78,6 @@ return {
 
 			-- Setup mason so it can manage external tooling
 			require("mason").setup()
-
-			-- Setup mason-null-ls so it can manage formatters and linters independently of LSPs
-			require("mason-null-ls").setup({
-				ensure_installed = { "stylua", "debugpy", "yamllint", "python_lsp_server" },
-				automatic_installation = true,
-			})
 
 			-- Ensure the servers above are installed
 			local mason_lspconfig = require("mason-lspconfig")
@@ -90,13 +95,13 @@ return {
 
 			mason_lspconfig.setup_handlers({
 				function(server_name)
-					require("lspconfig")[server_name].setup({
+					require("lspconfig")[server_name].setup(vim.tbl_deep_extend("force", {
 						capabilities = capabilities,
 						on_attach = on_attach,
-						settings = servers[server_name],
-					})
+					}, servers[server_name] or {}))
 				end,
 			})
+
 		end,
 	},
 }
