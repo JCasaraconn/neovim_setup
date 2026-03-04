@@ -60,6 +60,9 @@ return {
 				clangd = {
 					cmd = { "clangd", "-config-file=~/.config/clangd/config.yaml" },
 				},
+				gopls = {},
+				terraformls = {},
+				bashls = {},
 				pylsp = {
 					settings = {
 						pylsp = {

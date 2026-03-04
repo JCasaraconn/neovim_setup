@@ -7,7 +7,7 @@ return {
 	config = function()
 		require("mason").setup()
 		require("mason-null-ls").setup({
-			ensure_installed = { "stylua", "black", "isort", "yamlfmt", "yamllint" },
+			ensure_installed = { "stylua", "black", "isort", "yamlfmt", "yamllint", "gofumpt", "golangci_lint", "shfmt", "shellcheck" },
 			automatic_installation = true,
 		})
 		local null_ls = require("null-ls")
@@ -21,6 +21,11 @@ return {
 				null_ls.builtins.formatting.isort,
 				null_ls.builtins.formatting.yamlfmt,
 				null_ls.builtins.diagnostics.yamllint, -- YAML linter
+				null_ls.builtins.formatting.gofumpt, -- Go formatter
+				null_ls.builtins.diagnostics.golangci_lint, -- Go linter
+				null_ls.builtins.formatting.terraform_fmt, -- Terraform formatter
+				null_ls.builtins.formatting.shfmt, -- Shell formatter
+				null_ls.builtins.diagnostics.shellcheck, -- Shell linter
 				null_ls.builtins.diagnostics.mypy.with({
 					command = mypy_cmd,
 				}),
