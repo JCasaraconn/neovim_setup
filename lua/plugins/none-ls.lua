@@ -7,7 +7,18 @@ return {
 	config = function()
 		require("mason").setup()
 		require("mason-null-ls").setup({
-			ensure_installed = { "stylua", "black", "isort", "yamlfmt", "yamllint", "gofumpt", "golangci_lint", "shfmt", "shellcheck" },
+			ensure_installed = {
+				"stylua",
+				"black",
+				"isort",
+				"gofumpt",
+				"golangci_lint",
+				"shfmt",
+				"shellcheck",
+				"prettierd",
+				"sqlfluff",
+				"markdownlint",
+			},
 			automatic_installation = true,
 		})
 		local null_ls = require("null-ls")
@@ -16,24 +27,41 @@ return {
 
 		null_ls.setup({
 			sources = {
-				null_ls.builtins.formatting.stylua, -- Lua formatter
+				-- Lua
+				null_ls.builtins.formatting.stylua,
+				-- Python
 				null_ls.builtins.formatting.black,
 				null_ls.builtins.formatting.isort,
-				null_ls.builtins.formatting.yamlfmt,
-				null_ls.builtins.diagnostics.yamllint, -- YAML linter
-				null_ls.builtins.formatting.gofumpt, -- Go formatter
-				null_ls.builtins.diagnostics.golangci_lint, -- Go linter
-				null_ls.builtins.formatting.terraform_fmt, -- Terraform formatter
-				null_ls.builtins.formatting.shfmt, -- Shell formatter
-				null_ls.builtins.diagnostics.shellcheck, -- Shell linter
 				null_ls.builtins.diagnostics.mypy.with({
 					command = mypy_cmd,
 				}),
+				-- Go
+				null_ls.builtins.formatting.gofumpt,
+				null_ls.builtins.diagnostics.golangci_lint,
+				-- Terraform
+				null_ls.builtins.formatting.terraform_fmt,
+				-- Bash (shellcheck diagnostics provided by bashls LSP)
+				null_ls.builtins.formatting.shfmt,
+				-- JS, JSON, YAML, Markdown, CSS, HTML
+				null_ls.builtins.formatting.prettierd,
+				-- CSS
+				null_ls.builtins.diagnostics.stylelint,
+				-- SQL
+				null_ls.builtins.formatting.sqlfluff.with({
+					extra_args = { "--dialect", "postgres" },
+				}),
+				null_ls.builtins.diagnostics.sqlfluff.with({
+					extra_args = { "--dialect", "postgres" },
+				}),
+				-- Markdown
+				null_ls.builtins.diagnostics.markdownlint,
 			},
 		})
 
 		-- Example key mapping for formatting
-		vim.keymap.set("n", "<leader>gf", vim.lsp.buf.format, { desc = "Format code with LSP" })
+		vim.keymap.set("n", "<leader>gf", function()
+			vim.lsp.buf.format({ timeout_ms = 10000 })
+		end, { desc = "Format code with LSP" })
 		local diagnostics_enabled = true
 
 		vim.keymap.set("n", "<leader>td", function()

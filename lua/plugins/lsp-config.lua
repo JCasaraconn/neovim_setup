@@ -74,6 +74,10 @@ return {
 						},
 					},
 				},
+				yamlls = {},
+				eslint = {},
+				taplo = {},
+				stylelint_lsp = {},
 			}
 
 			-- Setup neovim lua configuration
