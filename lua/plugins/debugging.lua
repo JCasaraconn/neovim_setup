@@ -118,5 +118,8 @@ return {
 		vim.keymap.set("n", "<leader>du", function()
 			dapui.toggle()
 		end, { desc = "Toggle DAP UI" }, opts)
+
+		-- Git diff split (fugitive)
+		vim.keymap.set("n", "<leader>gd", ":Gvdiffsplit<CR>", { desc = "Git diff split" })
 	end,
 }

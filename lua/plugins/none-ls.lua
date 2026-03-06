@@ -26,6 +26,9 @@ return {
 		local mypy_cmd = conda_prefix and (conda_prefix .. "/bin/mypy") or "mypy"
 
 		null_ls.setup({
+			should_attach = function(bufnr)
+				return not vim.api.nvim_buf_get_name(bufnr):match("^fugitive://")
+			end,
 			sources = {
 				-- Lua
 				null_ls.builtins.formatting.stylua,
