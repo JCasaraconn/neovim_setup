@@ -62,7 +62,16 @@ return {
 				},
 				gopls = {},
 				terraformls = {},
-				bashls = {},
+				bashls = {
+					settings = {
+						bashIde = {
+							shfmt = {
+								caseIndent = true,
+								binaryNextLine = false,
+							},
+						},
+					},
+				},
 				pylsp = {
 					settings = {
 						pylsp = {

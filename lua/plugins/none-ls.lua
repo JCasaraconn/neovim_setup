@@ -34,9 +34,14 @@ return {
 				null_ls.builtins.formatting.stylua,
 				-- Python
 				null_ls.builtins.formatting.black,
-				null_ls.builtins.formatting.isort,
+				null_ls.builtins.formatting.isort.with({
+					extra_args = { "--profile", "black" },
+				}),
 				null_ls.builtins.diagnostics.mypy.with({
 					command = mypy_cmd,
+					cwd = function()
+						return vim.fn.getcwd()
+					end,
 				}),
 				-- Go
 				null_ls.builtins.formatting.gofumpt,
