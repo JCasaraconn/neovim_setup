@@ -102,12 +102,6 @@ return {
 				ensure_installed = vim.tbl_keys(servers),
 				automatic_installation = true,
 			})
-			lspconfig.ts_ls.setup({
-				capabilities = capabilities,
-			})
-			lspconfig.html.setup({
-				capabilities = capabilities,
-			})
 
 			mason_lspconfig.setup_handlers({
 				function(server_name)
@@ -115,6 +109,24 @@ return {
 						capabilities = capabilities,
 						on_attach = on_attach,
 					}, servers[server_name] or {}))
+				end,
+				-- ts_ls is not in the servers table (not managed by mason)
+				["ts_ls"] = function()
+					lspconfig.ts_ls.setup({
+						capabilities = capabilities,
+						on_attach = on_attach,
+					})
+				end,
+				-- Disable HTML LSP formatting — prettier handles it via none-ls
+				["html"] = function()
+					lspconfig.html.setup({
+						capabilities = capabilities,
+						on_attach = function(client, bufnr)
+							client.server_capabilities.documentFormattingProvider = false
+							client.server_capabilities.documentRangeFormattingProvider = false
+							on_attach(client, bufnr)
+						end,
+					})
 				end,
 			})
 

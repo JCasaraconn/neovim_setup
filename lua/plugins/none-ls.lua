@@ -15,7 +15,7 @@ return {
 				"golangci_lint",
 				"shfmt",
 				"shellcheck",
-				"prettierd",
+				"prettier",
 				"sqlfluff",
 				"markdownlint",
 			},
@@ -49,9 +49,13 @@ return {
 				-- Terraform
 				null_ls.builtins.formatting.terraform_fmt,
 				-- Bash (shellcheck diagnostics provided by bashls LSP)
-				null_ls.builtins.formatting.shfmt,
+				null_ls.builtins.formatting.shfmt.with({
+					extra_args = { "-i", "0", "-ci" },
+				}),
+				-- shellharden is not in Mason — uses system binary
+				null_ls.builtins.formatting.shellharden,
 				-- JS, JSON, YAML, Markdown, CSS, HTML
-				null_ls.builtins.formatting.prettierd,
+				null_ls.builtins.formatting.prettier,
 				-- CSS
 				null_ls.builtins.diagnostics.stylelint,
 				-- SQL
@@ -61,6 +65,7 @@ return {
 				null_ls.builtins.diagnostics.sqlfluff.with({
 					extra_args = { "--dialect", "postgres" },
 				}),
+				-- TOML: handled by taplo LSP in lsp-config.lua
 				-- Markdown
 				null_ls.builtins.diagnostics.markdownlint,
 			},
