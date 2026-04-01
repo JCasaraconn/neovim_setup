@@ -23,16 +23,28 @@ return {
             end
           end
 
-          -- Close Claude terminal if visible (its buffer gets destroyed during maximize)
+          -- Preserve Claude terminal through the maximize cycle.
+          -- The buffer has bufhidden="hide" which makes maximize force-delete it.
+          -- We hide the window (keeping buffer + process alive) and temporarily
+          -- clear bufhidden so the buffer survives the deletion sweep.
           local ok, claude_term = pcall(require, "claudecode.terminal")
           if ok and claude_term.get_active_terminal_bufnr then
             local bufnr = claude_term.get_active_terminal_bufnr()
-            if bufnr then
+            if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
               local info = vim.fn.getbufinfo(bufnr)
-              if info and #info > 0 and #info[1].windows > 0 then
-                sidebar_state[tab].claude = true
-                claude_term.close()
+              local is_visible = info and #info > 0 and #info[1].windows > 0
+
+              if is_visible then
+                sidebar_state[tab].claude_visible = true
+                sidebar_state[tab].claude_focused = (vim.api.nvim_get_current_buf() == bufnr)
+                -- Hide window but keep buffer + process alive (vs close() which destroys state)
+                claude_term.simple_toggle()
               end
+
+              -- Protect buffer from maximize's force-delete by temporarily clearing bufhidden
+              sidebar_state[tab].claude_bufnr = bufnr
+              sidebar_state[tab].claude_bufhidden = vim.bo[bufnr].bufhidden
+              vim.bo[bufnr].bufhidden = ""
             end
           end
         end,
@@ -54,15 +66,24 @@ return {
             pcall(vim.cmd, "Neotree show")
           end
 
-          if state.claude then
+          -- Restore Claude terminal buffer properties and visibility
+          if state.claude_bufnr and vim.api.nvim_buf_is_valid(state.claude_bufnr) then
+            vim.bo[state.claude_bufnr].bufhidden = state.claude_bufhidden or "hide"
+          end
+
+          if state.claude_visible then
             local ok, claude_term = pcall(require, "claudecode.terminal")
-            if ok and claude_term.ensure_visible then
-              claude_term.ensure_visible()
+            if ok then
+              if state.claude_focused then
+                claude_term.open() -- reopens with focus
+              elseif claude_term.ensure_visible then
+                claude_term.ensure_visible() -- reopens without focus
+              end
             end
           end
 
-          -- Restore focus to the editor window
-          if vim.api.nvim_win_is_valid(cur_win) then
+          -- Restore focus to the editor window (unless Claude was focused)
+          if not state.claude_focused and vim.api.nvim_win_is_valid(cur_win) then
             vim.api.nvim_set_current_win(cur_win)
           end
         end,
