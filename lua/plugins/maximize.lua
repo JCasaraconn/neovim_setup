@@ -4,24 +4,141 @@ return {
     config = function()
       require("maximize").setup({})
 
-      -- State for regular maximize (editor-focused, sidebars handled via autocmds)
-      local sidebar_state = {}
-      -- State for Claude-focused maximize (bypasses maximize.nvim entirely)
-      local claude_max_state = {}
-
-      -- Close neo-tree if visible, returns true if it was open
-      local function close_neo_tree()
-        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-          local buf = vim.api.nvim_win_get_buf(win)
-          if vim.bo[buf].filetype == "neo-tree" then
+      -----------------------------------------------------------
+      -- Panel type registry
+      --
+      -- Each entry defines how to detect, close, and restore a panel type.
+      -- Required: name, detect, is_visible, close, show_fullscreen, show_normal
+      -- Optional: show (autocmd restore), save_context, protect, unprotect
+      --
+      -- To add a new panel type, add an entry to this table.
+      -----------------------------------------------------------
+      local panel_types = {
+        {
+          name = "neo-tree",
+          detect = function(buf)
+            return vim.bo[buf].filetype == "neo-tree"
+          end,
+          is_visible = function()
+            for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+              if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "neo-tree" then
+                return true
+              end
+            end
+            return false
+          end,
+          close = function()
             pcall(vim.cmd, "Neotree close")
-            return true
-          end
+          end,
+          show = function()
+            pcall(vim.cmd, "Neotree show")
+          end,
+          save_context = function()
+            return {}
+          end,
+          -- NOTE: requires close_if_last_window = false in neo-tree config
+          show_fullscreen = function()
+            vim.cmd("Neotree focus")
+            local cur_win = vim.api.nvim_get_current_win()
+            for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+              if win ~= cur_win and vim.api.nvim_win_get_config(win).relative == "" then
+                pcall(vim.api.nvim_win_close, win, true)
+              end
+            end
+          end,
+          -- Uses "focus" instead of "show" because Neotree show schedules an async
+          -- callback (via renderer vim.schedule) that restores focus to the editor
+          show_normal = function()
+            pcall(vim.cmd, "Neotree focus")
+          end,
+        },
+        {
+          name = "claude",
+          detect = function(buf)
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if ok and ct.get_active_terminal_bufnr then
+              return ct.get_active_terminal_bufnr() == buf
+            end
+            return false
+          end,
+          is_visible = function()
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if not ok or not ct.get_active_terminal_bufnr then return false end
+            local bufnr = ct.get_active_terminal_bufnr()
+            if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then return false end
+            local info = vim.fn.getbufinfo(bufnr)
+            return info and #info > 0 and #info[1].windows > 0
+          end,
+          close = function()
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if not ok or not ct.get_active_terminal_bufnr then return end
+            local bufnr = ct.get_active_terminal_bufnr()
+            if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then return end
+            local info = vim.fn.getbufinfo(bufnr)
+            if info and #info > 0 and #info[1].windows > 0 then
+              ct.simple_toggle()
+            end
+          end,
+          show = function()
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if ok and ct.ensure_visible then
+              ct.ensure_visible()
+            end
+          end,
+          save_context = function()
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if not ok or not ct.get_active_terminal_bufnr then return {} end
+            local bufnr = ct.get_active_terminal_bufnr()
+            if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then return {} end
+            return { bufnr = bufnr }
+          end,
+          protect = function()
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if not ok or not ct.get_active_terminal_bufnr then return nil end
+            local bufnr = ct.get_active_terminal_bufnr()
+            if not bufnr or not vim.api.nvim_buf_is_valid(bufnr) then return nil end
+            local saved = vim.bo[bufnr].bufhidden
+            vim.bo[bufnr].bufhidden = ""
+            return { bufnr = bufnr, bufhidden = saved }
+          end,
+          unprotect = function(saved)
+            if saved and saved.bufnr and vim.api.nvim_buf_is_valid(saved.bufnr) then
+              vim.bo[saved.bufnr].bufhidden = saved.bufhidden or "hide"
+            end
+          end,
+          show_fullscreen = function(ctx)
+            if ctx.bufnr and vim.api.nvim_buf_is_valid(ctx.bufnr) then
+              vim.api.nvim_win_set_buf(0, ctx.bufnr)
+            end
+          end,
+          show_normal = function()
+            local ok, ct = pcall(require, "claudecode.terminal")
+            if ok and ct.ensure_visible then
+              ct.ensure_visible()
+            end
+          end,
+        },
+      }
+
+      local function find_panel(name)
+        for _, p in ipairs(panel_types) do
+          if p.name == name then return p end
         end
-        return false
+        return nil
       end
 
-      -- Save current editor window layout as a session script (excludes terminal/sidebar windows)
+      local function detect_panel(buf)
+        for _, p in ipairs(panel_types) do
+          if p.detect(buf) then return p end
+        end
+        return nil
+      end
+
+      -- State for panel-focused maximize (bypasses maximize.nvim entirely)
+      local panel_max_state = {}
+      -- State for editor-focused maximize (maximize.nvim path, panels managed via autocmds)
+      local sidebar_state = {}
+
       local function save_editor_session()
         local save_sopts = vim.o.sessionoptions
         vim.o.sessionoptions = "blank,help,winsize"
@@ -39,8 +156,8 @@ return {
         return script
       end
 
-      -- Maximize the Claude terminal: save editor layout, show only Claude
-      local function maximize_claude(claude_term, claude_bufnr)
+      -- Maximize any registered panel to fill the screen
+      local function maximize_panel(panel)
         local normal_count = 0
         for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
           if vim.api.nvim_win_get_config(win).relative == "" then
@@ -56,101 +173,140 @@ return {
         local save_lazyredraw = vim.o.lazyredraw
         vim.o.lazyredraw = true
 
-        claude_max_state[tab] = {
-          claude_bufnr = claude_bufnr,
-          claude_bufhidden = vim.bo[claude_bufnr].bufhidden,
-          neo_tree = close_neo_tree(),
+        local state = {
+          panel_name = panel.name,
+          panel_ctx = panel.save_context and panel.save_context() or {},
+          other_panels = {},
+          protected = {},
         }
 
-        -- Protect Claude buffer from any deletion sweep
-        vim.bo[claude_bufnr].bufhidden = ""
+        -- Close/hide all OTHER visible panels
+        for _, p in ipairs(panel_types) do
+          if p.name ~= panel.name and p.is_visible and p.is_visible() then
+            state.other_panels[p.name] = true
+            if p.protect then
+              state.protected[p.name] = p.protect()
+            end
+            p.close()
+          end
+        end
 
-        -- Hide Claude window (keeps buffer + process alive)
-        claude_term.simple_toggle()
+        -- Protect the target panel's buffer if needed (before closing)
+        if panel.protect then
+          state.protected[panel.name] = panel.protect()
+        end
 
-        -- Save editor-only session (Claude and neo-tree are already hidden/closed)
-        claude_max_state[tab].restore_script = save_editor_session()
+        -- Close the target panel (so it's excluded from editor session)
+        panel.close()
 
-        -- Close all editor windows, show Claude as the only window
+        -- Save editor-only session (all panels now hidden/closed)
+        state.restore_script = save_editor_session()
+
+        -- Close all remaining editor windows
         vim.cmd.only({ bang = true })
-        vim.api.nvim_win_set_buf(0, claude_bufnr)
-        vim.cmd("startinsert")
 
+        -- Show the panel full-screen
+        panel.show_fullscreen(state.panel_ctx)
+
+        -- vim.t.maximized is shared with maximize.nvim — the <Leader>z keymap must be
+        -- the sole entry point to avoid conflicting state between the two paths
         vim.t.maximized = true
+        panel_max_state[tab] = state
         vim.o.lazyredraw = save_lazyredraw
       end
 
-      -- Restore from Claude-focused maximize
-      local function restore_claude()
+      -- Restore from panel-focused maximize
+      local function restore_panel()
         local tab = vim.api.nvim_get_current_tabpage()
-        local state = claude_max_state[tab]
+        local state = panel_max_state[tab]
         if not state then return end
-        claude_max_state[tab] = nil
+        panel_max_state[tab] = nil
 
         local save_lazyredraw = vim.o.lazyredraw
         vim.o.lazyredraw = true
 
-        -- Keep Claude buffer alive while we switch away from it
-        if vim.api.nvim_buf_is_valid(state.claude_bufnr) then
-          vim.bo[state.claude_bufnr].bufhidden = "hide"
+        local panel = find_panel(state.panel_name)
+
+        -- If the target panel's buffer was protected, set bufhidden = "hide"
+        -- before switching away so the buffer survives becoming hidden
+        local target_prot = state.protected[state.panel_name]
+        if target_prot and target_prot.bufnr and vim.api.nvim_buf_is_valid(target_prot.bufnr) then
+          vim.bo[target_prot.bufnr].bufhidden = "hide"
+        end
+
+        -- Create a safe window, then let the panel close its own window properly.
+        -- (Avoids invalid window ID errors from plugins like neo-tree that manage
+        -- their own window lifecycle and react badly to nvim_win_set_buf.)
+        vim.cmd("botright new")
+        if panel and panel.close then
+          panel.close()
         end
 
         local save_eventignore = vim.o.eventignore
         vim.opt.eventignore:append("SessionLoadPost")
         local save_this = vim.v.this_session
 
-        -- Switch to temp buffer and source the saved editor session
-        vim.api.nvim_win_set_buf(0, vim.api.nvim_create_buf(false, true))
         vim.api.nvim_exec2(state.restore_script, { output = true })
 
         vim.v.this_session = save_this
         vim.o.eventignore = save_eventignore
 
-        -- Restore Claude buffer's original bufhidden
-        if vim.api.nvim_buf_is_valid(state.claude_bufnr) then
-          vim.bo[state.claude_bufnr].bufhidden = state.claude_bufhidden or "hide"
+        -- Unprotect all buffers (restore original bufhidden values)
+        for name, saved in pairs(state.protected) do
+          local p = find_panel(name)
+          if p and p.unprotect then
+            p.unprotect(saved)
+          end
         end
 
-        -- Reopen sidebars
-        if state.neo_tree then
-          pcall(vim.cmd, "Neotree show")
+        -- Restore the target panel first, then focus it. Other panels are restored
+        -- AFTER so that their async callbacks (e.g., neo-tree's vim.schedule in its
+        -- renderer) save the target panel window as "current_win" and restore to it
+        -- rather than stealing focus to the editor.
+        if panel and panel.show_normal then
+          panel.show_normal(state.panel_ctx)
         end
 
-        local ok, claude_term = pcall(require, "claudecode.terminal")
-        if ok and claude_term.ensure_visible then
-          claude_term.ensure_visible()
+        -- Focus the target panel immediately
+        if panel then
+          for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+            if panel.detect(vim.api.nvim_win_get_buf(win)) then
+              vim.api.nvim_set_current_win(win)
+              break
+            end
+          end
+        end
+
+        -- Now restore other panels — they'll see the target panel as the current window
+        for name, _ in pairs(state.other_panels) do
+          local p = find_panel(name)
+          if p and p.show then
+            p.show()
+          end
         end
 
         vim.t.maximized = false
         vim.o.lazyredraw = save_lazyredraw
       end
 
-      -- Autocmds for the regular maximize.nvim path (editor-focused with Claude as sidebar)
+      -- Autocmds for the maximize.nvim path (editor-focused, panels managed via registry)
       vim.api.nvim_create_autocmd("User", {
         pattern = "WindowMaximizeStart",
         callback = function()
           local tab = vim.api.nvim_get_current_tabpage()
-          sidebar_state[tab] = { neo_tree = close_neo_tree() }
+          local state = { panels = {}, protected = {} }
 
-          -- Preserve Claude terminal through maximize cycle
-          local ok, claude_term = pcall(require, "claudecode.terminal")
-          if ok and claude_term.get_active_terminal_bufnr then
-            local bufnr = claude_term.get_active_terminal_bufnr()
-            if bufnr and vim.api.nvim_buf_is_valid(bufnr) then
-              local info = vim.fn.getbufinfo(bufnr)
-              local is_visible = info and #info > 0 and #info[1].windows > 0
-
-              if is_visible then
-                sidebar_state[tab].claude_visible = true
-                claude_term.simple_toggle()
+          for _, p in ipairs(panel_types) do
+            if p.is_visible and p.is_visible() then
+              state.panels[p.name] = true
+              if p.protect then
+                state.protected[p.name] = p.protect()
               end
-
-              -- Temporarily clear bufhidden so maximize doesn't force-delete the buffer
-              sidebar_state[tab].claude_bufnr = bufnr
-              sidebar_state[tab].claude_bufhidden = vim.bo[bufnr].bufhidden
-              vim.bo[bufnr].bufhidden = ""
+              p.close()
             end
           end
+
+          sidebar_state[tab] = state
         end,
       })
 
@@ -164,18 +320,17 @@ return {
 
           local cur_win = vim.api.nvim_get_current_win()
 
-          if state.neo_tree then
-            pcall(vim.cmd, "Neotree show")
+          for name, saved in pairs(state.protected) do
+            local p = find_panel(name)
+            if p and p.unprotect then
+              p.unprotect(saved)
+            end
           end
 
-          if state.claude_bufnr and vim.api.nvim_buf_is_valid(state.claude_bufnr) then
-            vim.bo[state.claude_bufnr].bufhidden = state.claude_bufhidden or "hide"
-          end
-
-          if state.claude_visible then
-            local ok, claude_term = pcall(require, "claudecode.terminal")
-            if ok and claude_term.ensure_visible then
-              claude_term.ensure_visible()
+          for name, _ in pairs(state.panels) do
+            local p = find_panel(name)
+            if p and p.show then
+              p.show()
             end
           end
 
@@ -185,27 +340,24 @@ return {
         end,
       })
 
-      -- Main toggle: Claude-focused uses custom path, everything else uses maximize.nvim
+      -- Main toggle: panel-focused uses custom path, editor-focused uses maximize.nvim
       vim.keymap.set("n", "<Leader>z", function()
         local tab = vim.api.nvim_get_current_tabpage()
 
-        -- Restoring from Claude-focused maximize
-        if claude_max_state[tab] then
-          restore_claude()
+        -- Restoring from panel-focused maximize
+        if panel_max_state[tab] then
+          restore_panel()
           return
         end
 
-        -- If focused on Claude terminal, use custom maximize
-        local ok, claude_term = pcall(require, "claudecode.terminal")
-        if ok and claude_term.get_active_terminal_bufnr then
-          local bufnr = claude_term.get_active_terminal_bufnr()
-          if bufnr and vim.api.nvim_get_current_buf() == bufnr then
-            maximize_claude(claude_term, bufnr)
-            return
-          end
+        -- Check if current buffer matches a registered panel type
+        local panel = detect_panel(vim.api.nvim_get_current_buf())
+        if panel then
+          maximize_panel(panel)
+          return
         end
 
-        -- Default: maximize.nvim handles it (autocmds manage sidebars)
+        -- Default: maximize.nvim handles it (autocmds manage panels)
         require("maximize").toggle()
       end, { noremap = true, silent = true })
     end,

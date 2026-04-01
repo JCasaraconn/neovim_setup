@@ -24,7 +24,18 @@ return {
   },
   keys = {
     { "<leader>a", nil, desc = "AI/Claude Code" },
-    { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
+    {
+      "<leader>ac",
+      function()
+        vim.cmd("ClaudeCode")
+        vim.defer_fn(function()
+          if vim.bo.buftype == "terminal" and vim.api.nvim_get_mode().mode == "t" then
+            vim.cmd("stopinsert")
+          end
+        end, 50)
+      end,
+      desc = "Toggle Claude",
+    },
     { "<leader>af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
     { "<leader>ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
     { "<leader>aC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Claude" },
