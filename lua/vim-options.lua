@@ -114,3 +114,55 @@ end, {})
 
 vim.keymap.set("n", "<leader>sb", ":ToggleScrollBind<CR>", { silent = true })
 
+-- Reference Block: toggle a small pinned reference split at the top
+-- Each pair is { ref_win, work_win } so multiple vertical splits can each have one
+local reference_block_pairs = {}
+
+local function find_reference_pair(win)
+  for i, pair in ipairs(reference_block_pairs) do
+    if pair.ref == win or pair.work == win then
+      return i, pair
+    end
+  end
+  return nil, nil
+end
+
+local function toggle_reference_block()
+  local cur_win = vim.api.nvim_get_current_win()
+  local idx, pair = find_reference_pair(cur_win)
+
+  -- Toggle off: close the reference pane if it belongs to this window pair
+  if idx and pair and vim.api.nvim_win_is_valid(pair.ref) then
+    local tab = vim.api.nvim_get_current_tabpage()
+    local non_float_wins = vim.tbl_filter(function(w)
+      return vim.api.nvim_win_get_config(w).relative == ""
+    end, vim.api.nvim_tabpage_list_wins(tab))
+    if #non_float_wins < 2 then return end
+    -- If currently in the reference pane, move to working pane first
+    if cur_win == pair.ref and vim.api.nvim_win_is_valid(pair.work) then
+      vim.api.nvim_set_current_win(pair.work)
+    end
+    vim.api.nvim_win_close(pair.ref, false)
+    table.remove(reference_block_pairs, idx)
+    return
+  end
+
+  local height = vim.v.count > 0 and vim.v.count or 15
+
+  -- Split horizontally; cursor stays in top (original) window
+  vim.cmd("split")
+  local ref_win = vim.api.nvim_get_current_win()
+
+  -- Pin cursor line to top and resize
+  vim.wo[ref_win].scrolloff = 0
+  vim.cmd("normal! zt")
+  vim.api.nvim_win_set_height(ref_win, height)
+
+  -- Focus the bottom (working) pane
+  vim.cmd("wincmd w")
+  local work_win = vim.api.nvim_get_current_win()
+  table.insert(reference_block_pairs, { ref = ref_win, work = work_win })
+end
+
+vim.keymap.set("n", "<leader>rb", toggle_reference_block, { silent = true, desc = "Reference Block" })
+
