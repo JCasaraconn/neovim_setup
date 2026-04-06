@@ -27,6 +27,15 @@ return {
     {
       "<leader>ac",
       function()
+        -- If the terminal is the only window, open a blank split first
+        -- so closing the terminal doesn't trigger E444 (cannot close last window).
+        local wins = vim.api.nvim_tabpage_list_wins(0)
+        local non_float_wins = vim.tbl_filter(function(w)
+          return vim.api.nvim_win_get_config(w).relative == ""
+        end, wins)
+        if #non_float_wins == 1 and vim.bo.buftype == "terminal" then
+          vim.cmd("vnew")
+        end
         vim.cmd("ClaudeCode")
         vim.defer_fn(function()
           if vim.bo.buftype == "terminal" and vim.api.nvim_get_mode().mode == "t" then
