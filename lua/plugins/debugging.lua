@@ -87,39 +87,39 @@ return {
 		-- Toggle breakpoint
 		vim.keymap.set("n", "<leader>db", function()
 			dap.toggle_breakpoint()
-		end, { desc = "Toggle Breakpoint" }, opts)
+		end, { desc = "[Debugging] Toggle breakpoint" }, opts)
 
 		-- Continue / Start
 		vim.keymap.set("n", "<leader>dc", function()
 			dap.continue()
-		end, { desc = "Continue" }, opts)
+		end, { desc = "[Debugging] Continue" }, opts)
 
 		-- Step Over
 		vim.keymap.set("n", "<leader>do", function()
 			dap.step_over()
-		end, { desc = "Step Over" }, opts)
+		end, { desc = "[Debugging] Step over" }, opts)
 
 		-- Step Into
 		vim.keymap.set("n", "<leader>di", function()
 			dap.step_into()
-		end, { desc = "Step In" }, opts)
+		end, { desc = "[Debugging] Step in" }, opts)
 
 		-- Step Out
 		vim.keymap.set("n", "<leader>dO", function()
 			dap.step_out()
-		end, { desc = "Step Out" }, opts)
+		end, { desc = "[Debugging] Step out" }, opts)
 
 		-- Keymap to terminate debugging
 		vim.keymap.set("n", "<leader>dq", function()
 			require("dap").terminate()
-		end, { desc = "Terminate Debugging" }, opts)
+		end, { desc = "[Debugging] Terminate" }, opts)
 
 		-- Toggle DAP UI
 		vim.keymap.set("n", "<leader>du", function()
 			dapui.toggle()
-		end, { desc = "Toggle DAP UI" }, opts)
+		end, { desc = "[Debugging] Toggle DAP UI" }, opts)
 
 		-- Git diff split (fugitive)
-		vim.keymap.set("n", "<leader>gd", ":Gvdiffsplit<CR>", { desc = "Git diff split" })
+		vim.keymap.set("n", "<leader>gd", ":Gvdiffsplit<CR>", { desc = "[Git] Diff split" })
 	end,
 }

@@ -98,14 +98,14 @@ return {
 
 			-- Diagnostic keymaps
 			if vim.diagnostic.jump then
-				vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, { desc = "Go to previous diagnostic message" })
-				vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end, { desc = "Go to next diagnostic message" })
+				vim.keymap.set("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, { desc = "[Diagnostics] Previous diagnostic" })
+				vim.keymap.set("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end, { desc = "[Diagnostics] Next diagnostic" })
 			else
-				vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "Go to previous diagnostic message" })
-				vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "Go to next diagnostic message" })
+				vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, { desc = "[Diagnostics] Previous diagnostic" })
+				vim.keymap.set("n", "]d", vim.diagnostic.goto_next, { desc = "[Diagnostics] Next diagnostic" })
 			end
-			vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Open floating diagnostic message" })
-			vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "Open diagnostics list" })
+			vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "[Diagnostics] Open float" })
+			vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, { desc = "[Diagnostics] Open list" })
 		end,
 	},
 }

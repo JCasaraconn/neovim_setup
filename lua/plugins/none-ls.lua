@@ -74,7 +74,7 @@ return {
 		-- Example key mapping for formatting
 		vim.keymap.set("n", "<leader>gf", function()
 			vim.lsp.buf.format({ timeout_ms = 10000 })
-		end, { desc = "Format code with LSP" })
+		end, { desc = "[Formatting] Format code" })
 		local diagnostics_enabled = true
 
 		vim.keymap.set("n", "<leader>td", function()
@@ -86,6 +86,6 @@ return {
 				vim.diagnostic.disable()
 				print("Diagnostics Disabled")
 			end
-		end, { desc = "Toggle Diagnostics" })
+		end, { desc = "[Diagnostics] Toggle diagnostics" })
 	end,
 }

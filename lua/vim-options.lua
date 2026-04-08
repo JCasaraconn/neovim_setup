@@ -60,32 +60,32 @@ vim.opt.incsearch = true
 vim.keymap.set({ "n", "v" }, "<Space>", "<Nop>", { silent = true })
 
 -- Move line up or down visually
-vim.keymap.set("v", "J", ":m '>+1<Return>gv=gv")
-vim.keymap.set("v", "K", ":m '<-2<Return>gv=gv")
+vim.keymap.set("v", "J", ":m '>+1<Return>gv=gv", { desc = "[Motion] Move selection down" })
+vim.keymap.set("v", "K", ":m '<-2<Return>gv=gv", { desc = "[Motion] Move selection up" })
 
 -- Scroll down and up half a page
-vim.keymap.set("n", "<C-d>", "<C-d>zz")
-vim.keymap.set("n", "<C-u>", "<C-u>zz")
+vim.keymap.set("n", "<C-d>", "<C-d>zz", { desc = "[Motion] Half-page down and center" })
+vim.keymap.set("n", "<C-u>", "<C-u>zz", { desc = "[Motion] Half-page up and center" })
 
 -- position cursor to center of screen after n(next) and N(previous) word search
-vim.keymap.set("n", "n", "nzzzv")
-vim.keymap.set("n", "N", "Nzzzv")
+vim.keymap.set("n", "n", "nzzzv", { desc = "[Motion] Next match and center" })
+vim.keymap.set("n", "N", "Nzzzv", { desc = "[Motion] Prev match and center" })
 
 -- Remap for dealing with word wrap
-vim.keymap.set("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
-vim.keymap.set("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
+vim.keymap.set("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, desc = "[Motion] Wrap-aware up" })
+vim.keymap.set("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, desc = "[Motion] Wrap-aware down" })
 
 -- Navigating the panes in neovim
-vim.keymap.set("n", "<Leader>h", ":wincmd h<Return>", { noremap = true, silent = true })
-vim.keymap.set("n", "<Leader>j", ":wincmd j<Return>", { noremap = true, silent = true })
-vim.keymap.set("n", "<Leader>k", ":wincmd k<Return>", { noremap = true, silent = true })
-vim.keymap.set("n", "<Leader>l", ":wincmd l<Return>", { noremap = true, silent = true })
+vim.keymap.set("n", "<Leader>h", ":wincmd h<Return>", { noremap = true, silent = true, desc = "[Windows] Focus pane left" })
+vim.keymap.set("n", "<Leader>j", ":wincmd j<Return>", { noremap = true, silent = true, desc = "[Windows] Focus pane down" })
+vim.keymap.set("n", "<Leader>k", ":wincmd k<Return>", { noremap = true, silent = true, desc = "[Windows] Focus pane up" })
+vim.keymap.set("n", "<Leader>l", ":wincmd l<Return>", { noremap = true, silent = true, desc = "[Windows] Focus pane right" })
 
 -- Navigating the tabs in neovim
-vim.api.nvim_set_keymap('n', '<Leader>tn', ':tabnext<CR>', { noremap = true, silent = true, desc = "tabnext" })
-vim.api.nvim_set_keymap('n', '<Leader>tp', ':tabprevious<CR>', { noremap = true, silent = true, desc = "tabprevious" })
-vim.api.nvim_set_keymap('n', '<Leader>to', ':tabonly<CR>', { noremap = true, silent = true, desc = "tabonly" })
-vim.api.nvim_set_keymap('n', '<Leader>tc', ':tabclose<CR>', { noremap = true, silent = true, desc = "tabclose" })
+vim.api.nvim_set_keymap('n', '<Leader>tn', ':tabnext<CR>', { noremap = true, silent = true, desc = "[Tabs] Next tab" })
+vim.api.nvim_set_keymap('n', '<Leader>tp', ':tabprevious<CR>', { noremap = true, silent = true, desc = "[Tabs] Previous tab" })
+vim.api.nvim_set_keymap('n', '<Leader>to', ':tabonly<CR>', { noremap = true, silent = true, desc = "[Tabs] Close other tabs" })
+vim.api.nvim_set_keymap('n', '<Leader>tc', ':tabclose<CR>', { noremap = true, silent = true, desc = "[Tabs] Close tab" })
 
 
 -- [[ Highlight on yank ]]
@@ -112,7 +112,7 @@ vim.api.nvim_create_user_command("ToggleScrollBind", function()
   end
 end, {})
 
-vim.keymap.set("n", "<leader>sb", ":ToggleScrollBind<CR>", { silent = true })
+vim.keymap.set("n", "<leader>sb", ":ToggleScrollBind<CR>", { silent = true, desc = "[Windows] Toggle scroll bind" })
 
 -- Reference Block: toggle a small pinned reference split at the top
 -- Each pair is { ref_win, work_win } so multiple vertical splits can each have one
@@ -164,7 +164,7 @@ local function toggle_reference_block()
   table.insert(reference_block_pairs, { ref = ref_win, work = work_win })
 end
 
-vim.keymap.set("n", "<leader>rb", toggle_reference_block, { silent = true, desc = "Reference Block" })
+vim.keymap.set("n", "<leader>rb", toggle_reference_block, { silent = true, desc = "[Windows] Reference block" })
 
 -- Quit Neovim when a terminal closes and it's the last real window
 vim.api.nvim_create_autocmd("TermClose", {

@@ -359,7 +359,7 @@ return {
 
         -- Default: maximize.nvim handles it (autocmds manage panels)
         require("maximize").toggle()
-      end, { noremap = true, silent = true })
+      end, { noremap = true, silent = true, desc = "[Windows] Maximize toggle" })
     end,
   },
 }

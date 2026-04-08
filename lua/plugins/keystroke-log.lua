@@ -99,7 +99,7 @@ return {
         end
       end
 
-      vim.keymap.set("n", "<leader>kl", toggle, { silent = true, desc = "Toggle keystroke logging" })
+      vim.keymap.set("n", "<leader>kl", toggle, { silent = true, desc = "[Misc] Toggle keystroke log" })
 
       -- Auto-start logging on launch (set vim.g.keystroke_log_autostart = false to disable)
       if vim.g.keystroke_log_autostart ~= false then
