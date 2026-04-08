@@ -25,7 +25,6 @@ return {
         "Editing",
         "Treesitter",
         "Misc",
-        "Other",
       }
 
       -- Static fallback for keymaps not discoverable via nvim_get_keymap()
@@ -90,8 +89,7 @@ return {
 
           local cat, text = parse_tag(desc)
           if not cat then
-            cat = "Other"
-            text = desc
+            return
           end
 
           local mode = km.mode or "n"
