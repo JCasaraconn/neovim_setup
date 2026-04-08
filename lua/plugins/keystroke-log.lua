@@ -1,6 +1,7 @@
 return {
   {
     name = "keystroke-log",
+    dir = vim.fn.stdpath("config"),
     config = function()
       local ns = vim.api.nvim_create_namespace("keystroke_log")
       local log_path = vim.fn.stdpath("data") .. "/keystroke-log.jsonl"
@@ -22,7 +23,10 @@ return {
         end
 
         for _, entry in ipairs(buffer) do
-          file:write(vim.fn.json_encode(entry) .. "\n")
+          local ok, line = pcall(vim.fn.json_encode, entry)
+          if ok then
+            file:write(line .. "\n")
+          end
         end
         file:close()
         buffer = {}
@@ -96,6 +100,11 @@ return {
       end
 
       vim.keymap.set("n", "<leader>kl", toggle, { silent = true, desc = "Toggle keystroke logging" })
+
+      -- Auto-start logging on launch (set vim.g.keystroke_log_autostart = false to disable)
+      if vim.g.keystroke_log_autostart ~= false then
+        start()
+      end
     end,
   },
 }
