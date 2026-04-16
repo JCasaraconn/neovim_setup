@@ -159,14 +159,33 @@ local function toggle_reference_block()
   vim.cmd("split")
   local ref_win = vim.api.nvim_get_current_win()
 
-  -- Pin cursor line to top and resize
+  -- Pin cursor line to top and freeze scroll position
   vim.wo[ref_win].scrolloff = 0
+  vim.wo[ref_win].scrollbind = false
+  vim.wo[ref_win].cursorbind = false
   vim.cmd("normal! zt")
   vim.api.nvim_win_set_height(ref_win, height)
 
-  -- Focus the bottom (working) pane
+  -- Make the reference pane a frozen snapshot (scratch buffer with copied content)
+  local source_buf = vim.api.nvim_win_get_buf(ref_win)
+  local cursor_pos = vim.api.nvim_win_get_cursor(ref_win)
+  local lines = vim.api.nvim_buf_get_lines(source_buf, 0, -1, false)
+  local scratch = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(scratch, 0, -1, false, lines)
+  vim.bo[scratch].modifiable = false
+  vim.bo[scratch].buftype = "nofile"
+  vim.bo[scratch].filetype = vim.bo[source_buf].filetype
+  vim.api.nvim_win_set_buf(ref_win, scratch)
+  -- Restore cursor position and pin view
+  vim.api.nvim_win_set_cursor(ref_win, cursor_pos)
+  vim.api.nvim_set_current_win(ref_win)
+  vim.cmd("normal! zt")
+
+  -- Focus the bottom (working) pane, jump to end, and enter insert mode
   vim.cmd("wincmd w")
   local work_win = vim.api.nvim_get_current_win()
+  vim.cmd("normal! G")
+  vim.cmd("startinsert")
   table.insert(reference_block_pairs, { ref = ref_win, work = work_win })
 end
 
