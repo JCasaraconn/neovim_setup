@@ -75,6 +75,12 @@ vim.keymap.set("n", "N", "Nzzzv", { desc = "[Motion] Prev match and center" })
 vim.keymap.set("n", "k", "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true, desc = "[Motion] Wrap-aware up" })
 vim.keymap.set("n", "j", "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true, desc = "[Motion] Wrap-aware down" })
 
+-- Navigate in insert mode with Alt+hjkl
+vim.keymap.set("i", "<A-h>", "<Left>", { desc = "[Motion] Insert move left" })
+vim.keymap.set("i", "<A-j>", "<Down>", { desc = "[Motion] Insert move down" })
+vim.keymap.set("i", "<A-k>", "<Up>", { desc = "[Motion] Insert move up" })
+vim.keymap.set("i", "<A-l>", "<Right>", { desc = "[Motion] Insert move right" })
+
 -- Navigating the panes in neovim
 vim.keymap.set("n", "<Leader>h", ":wincmd h<Return>", { noremap = true, silent = true, desc = "[Windows] Focus pane left" })
 vim.keymap.set("n", "<Leader>j", ":wincmd j<Return>", { noremap = true, silent = true, desc = "[Windows] Focus pane down" })
