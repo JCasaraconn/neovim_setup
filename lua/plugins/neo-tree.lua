@@ -18,6 +18,19 @@ return {
 			filters = {
 				dotfiles = true,
 			},
+			filesystem = {
+				window = {
+					mappings = {
+						["ga"] = "git_add_file",
+						["gu"] = "git_unstage_file",
+						["gA"] = "git_add_all",
+						["gr"] = "git_revert_file",
+						["gc"] = "git_commit",
+						["gp"] = "git_push",
+						["gg"] = "git_commit_and_push",
+					},
+				},
+			},
 		})
 		require("nvim-web-devicons").setup({
 			override = {
