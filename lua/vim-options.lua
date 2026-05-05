@@ -19,6 +19,10 @@ vim.o.hlsearch = false
 vim.wo.number = true
 vim.opt.relativenumber = true
 
+vim.keymap.set("n", "<leader>rn", function()
+  vim.opt.relativenumber = not vim.opt.relativenumber:get()
+end, { desc = "[Toggle] Relative line numbers" })
+
 -- Enable mouse mode
 vim.o.mouse = "a"
 
