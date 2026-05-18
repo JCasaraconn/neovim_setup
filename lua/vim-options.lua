@@ -5,6 +5,9 @@ vim.cmd("set shiftwidth=2")
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+-- Disable keystroke logging auto-start
+vim.g.keystroke_log_autostart = false
+
 -- Point to vim-notes directory
 vim.g.notes_directories = {"~/Documents/Notes"}
 
