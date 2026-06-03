@@ -29,9 +29,70 @@ end, { desc = "[Toggle] Relative line numbers" })
 -- Enable mouse mode
 vim.o.mouse = "a"
 
--- Sync clipboard between OS and Neovim.
+-- Clipboard: route the "+/"* registers through an OSC 52 provider.
+--  OSC 52 writes yanked text to the host terminal's clipboard via an escape
+--  sequence, so copy works over SSH/tmux without an X server (no xclip/$DISPLAY).
+--  This Neovim build (0.10-dev) predates vim.ui.clipboard.osc52 and vim.base64,
+--  so the encoder and provider are implemented inline. See `:help 'clipboard'`.
+local function base64_encode(input)
+  local chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+  local out = {}
+  for i = 1, #input, 3 do
+    local b1, b2, b3 = input:byte(i), input:byte(i + 1), input:byte(i + 2)
+    local c1 = math.floor(b1 / 4)
+    local c2 = (b1 % 4) * 16 + math.floor((b2 or 0) / 16)
+    local c3 = ((b2 or 0) % 16) * 4 + math.floor((b3 or 0) / 64)
+    local c4 = (b3 or 0) % 64
+    out[#out + 1] = chars:sub(c1 + 1, c1 + 1)
+    out[#out + 1] = chars:sub(c2 + 1, c2 + 1)
+    out[#out + 1] = b2 and chars:sub(c3 + 1, c3 + 1) or "="
+    out[#out + 1] = b3 and chars:sub(c4 + 1, c4 + 1) or "="
+  end
+  return table.concat(out)
+end
+
+-- Write a raw control sequence to the terminal. Neovim's stderr (channel 2) is
+-- wired to the pty, so chansend reaches tmux/the terminal; fall back to /dev/tty.
+local function term_write(seq)
+  if not pcall(vim.fn.chansend, vim.v.stderr, seq) then
+    local tty = io.open("/dev/tty", "w")
+    if tty then
+      tty:write(seq)
+      tty:close()
+    end
+  end
+end
+
+-- Terminals (and this Neovim build) generally can't read the clipboard back via
+-- OSC 52, so cache each yank and serve it on paste, keyed per register.
+local osc52_cache = {
+  ["+"] = { contents = {}, regtype = "v" },
+  ["*"] = { contents = {}, regtype = "v" },
+}
+
+local function osc52_copy(regname, selection)
+  return function(lines, regtype)
+    osc52_cache[regname] = { contents = lines, regtype = regtype or "v" }
+    local payload = base64_encode(table.concat(lines, "\n"))
+    term_write(string.format("\027]52;%s;%s\027\\", selection, payload))
+  end
+end
+
+local function osc52_paste(regname)
+  return function()
+    local entry = osc52_cache[regname]
+    return { entry.contents, entry.regtype }
+  end
+end
+
+vim.g.clipboard = {
+  name = "osc52",
+  copy = { ["+"] = osc52_copy("+", "c"), ["*"] = osc52_copy("*", "p") },
+  paste = { ["+"] = osc52_paste("+"), ["*"] = osc52_paste("*") },
+}
+
+-- Sync clipboard between OS and Neovim via the OSC 52 provider above.
 --  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
 vim.o.clipboard = "unnamedplus"
 
 -- Enable break indent
