@@ -1,6 +1,9 @@
 return {
 	"obsidian-nvim/obsidian.nvim",
-	version = "*",
+	-- Tracking main until a release past v3.16.6: that tag calls
+	-- vim.pos.cursor(0), but Neovim 0.12 takes (buf, pos), so Obsidian toc
+	-- throws "attempt to index local 'pos' (a nil value)". Fixed upstream in
+	-- ead02ee. Return to version = "*" once a newer tag ships.
 	ft = "markdown",
 	cmd = "Obsidian",
 	keys = {
