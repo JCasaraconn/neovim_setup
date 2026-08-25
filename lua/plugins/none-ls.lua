@@ -1,11 +1,10 @@
 return {
 	"nvimtools/none-ls.nvim",
 	dependencies = {
-		"williamboman/mason.nvim",
+		"mason-org/mason.nvim",
 		"jay-babu/mason-null-ls.nvim",
 	},
 	config = function()
-		require("mason").setup()
 		require("mason-null-ls").setup({
 			ensure_installed = {
 				-- stylua >= v2.1.0 links against glibc 2.32; this host has 2.31.

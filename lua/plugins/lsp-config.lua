@@ -1,135 +1,115 @@
+-- Servers Mason keeps installed; the key set doubles as `ensure_installed`.
+local servers = {
+	clangd = {
+		cmd = { "clangd", "-config-file=~/.config/clangd/config.yaml" },
+	},
+	gopls = {},
+	terraformls = {},
+	bashls = {
+		settings = {
+			bashIde = {
+				shfmt = {
+					caseIndent = true,
+					binaryNextLine = false,
+				},
+			},
+		},
+	},
+	pylsp = {
+		settings = {
+			pylsp = {
+				plugins = {
+					autopep8 = { enabled = false },
+					yapf = { enabled = false },
+					pycodestyle = { maxLineLength = 88 },
+				},
+			},
+		},
+	},
+	yamlls = {},
+	eslint = {},
+	taplo = {},
+	stylelint_lsp = {},
+}
+
+-- Configured but not in `ensure_installed`; Mason enables them once installed.
+local on_demand_servers = {
+	html = {
+		-- Prettier formats HTML through none-ls; keep the server out of it.
+		on_attach = function(client)
+			client.server_capabilities.documentFormattingProvider = false
+			client.server_capabilities.documentRangeFormattingProvider = false
+		end,
+	},
+}
+
+local function map_lsp_keys(bufnr)
+	local nmap = function(keys, func, desc)
+		vim.keymap.set("n", keys, func, { buffer = bufnr, desc = "[LSP] " .. desc })
+	end
+
+	nmap("<leader>rn", vim.lsp.buf.rename, "Rename")
+	nmap("<leader>ca", vim.lsp.buf.code_action, "Code action")
+
+	nmap("gd", vim.lsp.buf.definition, "Goto definition")
+	nmap("gr", require("telescope.builtin").lsp_references, "Goto references")
+	nmap("gI", vim.lsp.buf.implementation, "Goto implementation")
+	nmap("<leader>D", vim.lsp.buf.type_definition, "Type definition")
+	nmap("<leader>ds", require("telescope.builtin").lsp_document_symbols, "Document symbols")
+	nmap("<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, "Workspace symbols")
+
+	-- See `:help K` for why this keymap
+	nmap("K", vim.lsp.buf.hover, "Hover documentation")
+	nmap("<C-k>", vim.lsp.buf.signature_help, "Signature documentation")
+
+	-- Lesser used LSP functionality
+	nmap("gD", vim.lsp.buf.declaration, "Goto declaration")
+	nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "Add workspace folder")
+	nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "Remove workspace folder")
+	nmap("<leader>wl", function()
+		print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
+	end, "List workspace folders")
+
+	vim.api.nvim_buf_create_user_command(bufnr, "Format", function(_)
+		vim.lsp.buf.format()
+	end, { desc = "Format current buffer with LSP" })
+end
+
 return {
 	{
 		"neovim/nvim-lspconfig",
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
-			-- nvim-cmp supports additional completion capabilities, so broadcast that to servers
-			local capabilities = vim.lsp.protocol.make_client_capabilities()
-			capabilities = require("cmp_nvim_lsp").default_capabilities(capabilities)
-			local lspconfig = require("lspconfig")
+			vim.lsp.config("*", {
+				capabilities = require("cmp_nvim_lsp").default_capabilities(),
+			})
 
-			local on_attach = function(_, bufnr)
-				-- NOTE: Remember that lua is a real programming language, and as such it is possible
-				-- to define small helper and utility functions so you don't have to repeat yourself
-				-- many times.
-				--
-				-- In this case, we create a function that lets us more easily define mappings specific
-				-- for LSP related items. It sets the mode, buffer and description for us each time.
-				local nmap = function(keys, func, desc)
-					if desc then
-						desc = "[LSP] " .. desc
-					end
-
-					vim.keymap.set("n", keys, func, { buffer = bufnr, desc = desc })
+			for _, group in ipairs({ servers, on_demand_servers }) do
+				for name, config in pairs(group) do
+					vim.lsp.config(name, config)
 				end
-
-				nmap("<leader>rn", vim.lsp.buf.rename, "Rename")
-				nmap("<leader>ca", vim.lsp.buf.code_action, "Code action")
-
-				nmap("gd", vim.lsp.buf.definition, "Goto definition")
-				nmap("gr", require("telescope.builtin").lsp_references, "Goto references")
-				nmap("gI", vim.lsp.buf.implementation, "Goto implementation")
-				nmap("<leader>D", vim.lsp.buf.type_definition, "Type definition")
-				nmap("<leader>ds", require("telescope.builtin").lsp_document_symbols, "Document symbols")
-				nmap("<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, "Workspace symbols")
-
-				-- See `:help K` for why this keymap
-				nmap("K", vim.lsp.buf.hover, "Hover documentation")
-				nmap("<C-k>", vim.lsp.buf.signature_help, "Signature documentation")
-
-				-- Lesser used LSP functionality
-				nmap("gD", vim.lsp.buf.declaration, "Goto declaration")
-				nmap("<leader>wa", vim.lsp.buf.add_workspace_folder, "Add workspace folder")
-				nmap("<leader>wr", vim.lsp.buf.remove_workspace_folder, "Remove workspace folder")
-				nmap("<leader>wl", function()
-					print(vim.inspect(vim.lsp.buf.list_workspace_folders()))
-				end, "List workspace folders")
-
-				-- Create a command `:Format` local to the LSP buffer
-				vim.api.nvim_buf_create_user_command(bufnr, "Format", function(_)
-					vim.lsp.buf.format()
-				end, { desc = "Format current buffer with LSP" })
 			end
 
-			-- Enable the following language servers
-			--  Feel free to add/remove any LSPs that you want here. They will automatically be installed.
-			--
-			--  Add any additional override configuration in the following tables. They will be passed to
-			--  the `settings` field of the server config. You must look up that documentation yourself.
-			local servers = {
-				clangd = {
-					cmd = { "clangd", "-config-file=~/.config/clangd/config.yaml" },
-				},
-				gopls = {},
-				terraformls = {},
-				bashls = {
-					settings = {
-						bashIde = {
-							shfmt = {
-								caseIndent = true,
-								binaryNextLine = false,
-							},
-						},
-					},
-				},
-				pylsp = {
-					settings = {
-						pylsp = {
-							plugins = {
-								autopep8 = { enabled = false },
-								yapf = { enabled = false },
-								pycodestyle = { maxLineLength = 88 },
-							},
-						},
-					},
-				},
-				yamlls = {},
-				eslint = {},
-				taplo = {},
-				stylelint_lsp = {},
-			}
-
-			-- Setup neovim lua configuration
-			require("neodev").setup()
-
-			-- Setup mason so it can manage external tooling
-			require("mason").setup()
-
-			-- Ensure the servers above are installed
-			local mason_lspconfig = require("mason-lspconfig")
-
-			mason_lspconfig.setup({
-				ensure_installed = vim.tbl_keys(servers),
-				automatic_installation = true,
-			})
-
-			mason_lspconfig.setup_handlers({
-				function(server_name)
-					require("lspconfig")[server_name].setup(vim.tbl_deep_extend("force", {
-						capabilities = capabilities,
-						on_attach = on_attach,
-					}, servers[server_name] or {}))
-				end,
-				-- ts_ls is not in the servers table (not managed by mason)
-				["ts_ls"] = function()
-					lspconfig.ts_ls.setup({
-						capabilities = capabilities,
-						on_attach = on_attach,
-					})
-				end,
-				-- Disable HTML LSP formatting — prettier handles it via none-ls
-				["html"] = function()
-					lspconfig.html.setup({
-						capabilities = capabilities,
-						on_attach = function(client, bufnr)
-							client.server_capabilities.documentFormattingProvider = false
-							client.server_capabilities.documentRangeFormattingProvider = false
-							on_attach(client, bufnr)
-						end,
-					})
+			vim.api.nvim_create_autocmd("LspAttach", {
+				group = vim.api.nvim_create_augroup("lsp-attach-keymaps", { clear = true }),
+				callback = function(event)
+					map_lsp_keys(event.buf)
 				end,
 			})
-
 		end,
+	},
+	{
+		"mason-org/mason-lspconfig.nvim",
+		event = { "BufReadPre", "BufNewFile" },
+		dependencies = {
+			"mason-org/mason.nvim",
+			"neovim/nvim-lspconfig",
+		},
+		opts = {
+			ensure_installed = vim.tbl_keys(servers),
+			-- stylua ships an LSP mode that lspconfig now has a config for, so
+			-- automatic_enable would start it. It is a none-ls formatter here.
+			automatic_enable = { exclude = { "stylua" } },
+		},
 	},
 }
