@@ -1,10 +1,6 @@
 return {
 	"obsidian-nvim/obsidian.nvim",
 	version = "*",
-	-- Upstream requires Neovim >= 0.11. This machine runs a 0.10.0-dev build where
-	-- the plugin errors on load (vim.iter():flatten() is absent), so stay inert
-	-- until Neovim is upgraded rather than breaking every startup.
-	cond = vim.fn.has("nvim-0.11") == 1,
 	ft = "markdown",
 	cmd = "Obsidian",
 	keys = {
