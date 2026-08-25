@@ -8,7 +8,8 @@ return {
 		require("mason").setup()
 		require("mason-null-ls").setup({
 			ensure_installed = {
-				"stylua",
+				-- stylua >= v2.1.0 links against glibc 2.32; this host has 2.31.
+				"stylua@v2.0.2",
 				"black",
 				"isort",
 				"gofumpt",
