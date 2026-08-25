@@ -75,17 +75,10 @@ return {
 		vim.keymap.set("n", "<leader>gf", function()
 			vim.lsp.buf.format({ timeout_ms = 10000 })
 		end, { desc = "[Formatting] Format code" })
-		local diagnostics_enabled = true
-
 		vim.keymap.set("n", "<leader>td", function()
-			diagnostics_enabled = not diagnostics_enabled
-			if diagnostics_enabled then
-				vim.diagnostic.enable()
-				print("Diagnostics Enabled")
-			else
-				vim.diagnostic.disable()
-				print("Diagnostics Disabled")
-			end
+			local enabled = not vim.diagnostic.is_enabled()
+			vim.diagnostic.enable(enabled)
+			print(enabled and "Diagnostics Enabled" or "Diagnostics Disabled")
 		end, { desc = "[Diagnostics] Toggle diagnostics" })
 	end,
 }
