@@ -1,6 +1,9 @@
 return {
 	"nvim-neo-tree/neo-tree.nvim",
-	event = "VimEnter",
+	-- Must not be event-lazy: netrw hijacking is registered by the plugin's own
+	-- BufEnter autocmd, which has to exist before Neovim opens the directory
+	-- buffer for `nvim .`. neo-tree defers its own internals regardless.
+	lazy = false,
 	branch = "v3.x",
 	dependencies = {
 		"nvim-lua/plenary.nvim",
