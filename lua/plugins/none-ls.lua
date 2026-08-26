@@ -7,8 +7,12 @@ return {
 	config = function()
 		require("mason-null-ls").setup({
 			ensure_installed = {
-				-- stylua >= v2.1.0 links against glibc 2.32; this host has 2.31.
-				"stylua@v2.0.2",
+				-- stylua is deliberately absent: Mason picks the linux_x64_gnu
+				-- asset, which needs glibc 2.32 while this host has 2.31, and a
+				-- version pin here cannot survive a Mason update-all. The static
+				-- musl build lives in ~/.local/bin instead:
+				--   curl -Lo /tmp/s.zip https://github.com/JohnnyMorganz/StyLua/releases/latest/download/stylua-linux-x86_64-musl.zip
+				--   unzip -p /tmp/s.zip stylua > ~/.local/bin/stylua && chmod +x ~/.local/bin/stylua
 				"black",
 				"isort",
 				"gofumpt",
