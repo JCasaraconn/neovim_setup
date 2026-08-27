@@ -16,6 +16,11 @@ return {
 		assert(vim.v.shell_error == 0, "markdown-preview.nvim: yarn install failed\n" .. out)
 	end,
 	init = function()
+		-- Pinned so the preview URL, and any firewall or SSH-forward rule pointing at
+		-- it, stay stable; mkdp otherwise derives a fresh port from the clock each
+		-- session. 8765 is clear of 8091 and 9341, which are already in use here.
+		vim.g.mkdp_port = "8765"
+
 		if vim.env.DISPLAY and vim.env.DISPLAY ~= "" then
 			return
 		end
