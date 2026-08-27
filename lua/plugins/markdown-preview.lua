@@ -16,20 +16,22 @@ return {
 		assert(vim.v.shell_error == 0, "markdown-preview.nvim: yarn install failed\n" .. out)
 	end,
 	init = function()
-		-- Pinned so the preview URL, and any firewall or SSH-forward rule pointing at
-		-- it, stay stable; mkdp otherwise derives a fresh port from the clock each
-		-- session. 8765 is clear of 8091 and 9341, which are already in use here.
+		-- Pinned so the URL and the SSH forward aimed at it stay stable; mkdp otherwise
+		-- derives a fresh port from the clock each session. 8765 is clear of 8091 and
+		-- 9341, the only listeners in that range here.
 		vim.g.mkdp_port = "8765"
 
 		if vim.env.DISPLAY and vim.env.DISPLAY ~= "" then
 			return
 		end
-		-- No X display, so this is an SSH or bare console session and launching a
-		-- browser here has nowhere to draw. Serve on 0.0.0.0 instead -- mkdp then fills
-		-- the URL host from this machine's LAN address -- and hand the URL back rather
-		-- than opening anything. Writing it to "+ pushes it through the OSC 52 provider
-		-- onto the clipboard of whichever machine is driving the terminal.
-		vim.g.mkdp_open_to_the_world = 1
+		-- No X display, so this is an SSH or bare console session and a browser started
+		-- here would have nowhere to draw. The server is left on its default 127.0.0.1
+		-- and mkdp addresses it as localhost, so the note is never exposed to the
+		-- network; reach it by forwarding the port from the machine running the browser:
+		--     ssh -L 8765:localhost:8765 <this host>
+		-- mkdp_browserfunc then hands the URL back instead of launching anything, and
+		-- writing it to "+ pushes it through the OSC 52 provider onto that machine's
+		-- clipboard.
 		vim.g.mkdp_browserfunc = "MkdpPreviewUrl"
 		vim.cmd([[
 			function! MkdpPreviewUrl(url) abort
