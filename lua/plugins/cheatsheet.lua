@@ -26,6 +26,7 @@ return {
         "Markdown",
         "Editing",
         "Treesitter",
+        "Textobj",
         "Misc",
       }
 
@@ -45,10 +46,9 @@ return {
         { cat = "Terminal", lhs = "F8", desc = "Prev terminal" },
         { cat = "Terminal", lhs = "F9", desc = "Next terminal" },
         { cat = "Terminal", lhs = "F12", desc = "Toggle terminal" },
-        { cat = "Treesitter", lhs = "af / if", desc = "Select outer/inner function" },
-        { cat = "Treesitter", lhs = "ac / ic", desc = "Select outer/inner class" },
-        { cat = "Treesitter", lhs = "]m / [m", desc = "Next / prev function start" },
-        { cat = "Treesitter", lhs = "]] / [[", desc = "Next / prev class start" },
+        { cat = "Treesitter", lhs = "C-Space", desc = "Start / expand node selection" },
+        { cat = "Treesitter", lhs = "C-s", desc = "Expand selection to scope" },
+        { cat = "Treesitter", lhs = "BS", desc = "Shrink node selection" },
       }
 
       -- Format a keymap LHS for display (human-readable)
