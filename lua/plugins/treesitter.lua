@@ -25,6 +25,7 @@ return {
 					"sql",
 					"yaml",
 					"markdown",
+					"markdown_inline",
 					"css",
 					"html",
 					"toml",
@@ -45,6 +46,26 @@ return {
 					},
 				},
 			})
+			-- nvim-treesitter master stops at Neovim 0.11 and registers its query
+			-- directives with `all = false`, an option 0.12 removed. Handlers now get a
+			-- list of nodes instead of one, so this directive throws and aborts every
+			-- injection in the buffer -- a single fenced code block leaves the whole
+			-- markdown file unhighlighted and unrendered.
+			-- TODO(nvim-treesitter-main-migration): drop when treesitter moves to `main`.
+			require("nvim-treesitter.query_predicates")
+			local info_string_aliases = { ex = "elixir", pl = "perl", sh = "bash", uxn = "uxntal", ts = "typescript" }
+			vim.treesitter.query.add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
+				local node = match[pred[2]]
+				node = type(node) == "table" and node[1] or node
+				if not node then
+					return
+				end
+				local alias = vim.treesitter.get_node_text(node, bufnr):lower()
+				metadata["injection.language"] = vim.filetype.match({ filename = "a." .. alias })
+					or info_string_aliases[alias]
+					or alias
+			end, { force = true })
+
 			-- Diagnostic display
 			vim.diagnostic.config({
 				virtual_lines = true,
