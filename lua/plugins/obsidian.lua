@@ -1,3 +1,37 @@
+local function ordinal(day)
+	if day >= 11 and day <= 13 then
+		return day .. "th"
+	end
+	return day .. (({ "st", "nd", "rd" })[day % 10] or "th")
+end
+
+local function todays_date_id()
+	local today = os.date("*t")
+	return string.format("%s, %s %s, %d", os.date("%A"), os.date("%B"), ordinal(today.day), today.year)
+end
+
+--- Turn what was typed at the "Enter id or path" prompt into a note id.
+--- Directory segments are kept verbatim so an existing folder is matched rather than
+--- a near-duplicate created beside it; only the final segment is slugified.
+local function note_id_from_input(input, dir)
+	local segments = vim.split(input or "", "/")
+	local name = vim.trim(table.remove(segments) or "")
+	local subdir = table.concat(
+		vim.tbl_filter(function(segment)
+			return segment ~= ""
+		end, segments),
+		"/"
+	)
+
+	local target = dir
+	if target and subdir ~= "" then
+		target = require("obsidian.path").new(dir) / subdir
+	end
+
+	local id = name ~= "" and require("obsidian.builtin").title_id(name, target) or todays_date_id()
+	return subdir ~= "" and subdir .. "/" .. id or id
+end
+
 return {
 	"obsidian-nvim/obsidian.nvim",
 	-- Tracking main until a release past v3.16.6: that tag calls
@@ -27,6 +61,11 @@ return {
 			{ name = "personal", path = require("vault") },
 		},
 		picker = { name = "telescope.nvim" },
+		-- The stock zettel_id takes no parameters, so the name typed at the "Enter id or
+		-- path" prompt reaches it and is discarded, leaving every note a random
+		-- "1787848080-EMBD". Honour the input instead, and fall back to the date rather
+		-- than to that random id when the prompt is left empty.
+		note_id_func = note_id_from_input,
 		-- enter_note runs after the plugin's own conceallevel check, so the warning it
 		-- would emit is a false alarm -- suppress it rather than concealing all markdown.
 		ui = { ignore_conceal_warn = true },
