@@ -23,6 +23,7 @@ return {
         "Neo-tree",
         "Claude",
         "Obsidian",
+        "Markdown",
         "Editing",
         "Treesitter",
         "Misc",
