@@ -14,7 +14,7 @@ Each file in `lua/plugins/` is auto-loaded by Lazy. To add a plugin, create a ne
 
 **Categories**:
 - LSP & completion: lsp-config, mason, completions
-- UI: lualine, alpha, onedark, neo-tree, fidget
+- UI: lualine, alpha, catppuccin, neo-tree, fidget
 - Editing: treesitter, surround, claudecode
 - Tools: telescope, floaterm, maximize, debugging, none-ls
 
