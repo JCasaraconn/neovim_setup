@@ -108,6 +108,9 @@ vim.o.smartcase = true
 -- Keep signcolumn on by default
 vim.wo.signcolumn = "yes"
 
+-- Blank out the ~ markers on lines past the end of a buffer
+vim.opt.fillchars:append({ eob = " " })
+
 -- Decrease update time
 vim.o.updatetime = 250
 vim.o.timeout = true
