@@ -6,7 +6,13 @@ return {
 	config = function()
 		require("catppuccin").setup({
 			flavour = "mocha",
-			auto_integrations = true,
+			integrations = {
+				fidget = true,
+				harpoon = true,
+				mason = true,
+				snacks = { enabled = true },
+				which_key = true,
+			},
 		})
 		vim.cmd.colorscheme("catppuccin-nvim")
 
