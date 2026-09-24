@@ -264,7 +264,11 @@ vim.keymap.set("n", "<leader>rb", toggle_reference_block, { silent = true, desc 
 
 -- Quit Neovim when a terminal closes and it's the last real window
 vim.api.nvim_create_autocmd("TermClose", {
-  callback = function()
+  callback = function(args)
+    local term_win = vim.fn.bufwinid(args.buf)
+    if term_win == -1 or vim.api.nvim_win_get_config(term_win).relative ~= "" then
+      return
+    end
     vim.defer_fn(function()
       local wins = vim.tbl_filter(function(w)
         return vim.api.nvim_win_is_valid(w) and vim.api.nvim_win_get_config(w).relative == ""
