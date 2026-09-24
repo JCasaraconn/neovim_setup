@@ -46,6 +46,8 @@ return {
 					cwd = function()
 						return vim.fn.getcwd()
 					end,
+					-- none-ls can orphan mypy's shadow copies when nvim quits, so keep them out of the repo
+					temp_dir = vim.fs.dirname(vim.fn.tempname()),
 				}),
 				-- Go
 				null_ls.builtins.formatting.gofumpt,
