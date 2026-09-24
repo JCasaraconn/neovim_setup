@@ -12,9 +12,16 @@ return {
 	opts = {
 		-- neo-tree owns `nvim .`
 		open_for_directories = false,
-		change_neovim_cwd_on_close = true,
 		keymaps = {
 			show_help = "<f1>",
+		},
+		hooks = {
+			-- yazi skips the cwd file on Q (quit --no-cwd-file), which change_neovim_cwd_on_close ignores
+			yazi_closed_successfully = function(chosen_file, config, state)
+				if chosen_file == nil and vim.uv.fs_stat(config.cwd_file_path) then
+					vim.cmd.cd(state.last_directory.filename)
+				end
+			end,
 		},
 	},
 }
