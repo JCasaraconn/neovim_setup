@@ -12,6 +12,7 @@ return {
 	opts = {
 		-- neo-tree owns `nvim .`
 		open_for_directories = false,
+		change_neovim_cwd_on_close = true,
 		keymaps = {
 			show_help = "<f1>",
 		},
