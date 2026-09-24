@@ -38,6 +38,11 @@ return {
 	-- vim.pos.cursor(0), but Neovim 0.12 takes (buf, pos), so Obsidian toc
 	-- throws "attempt to index local 'pos' (a nil value)". Fixed upstream in
 	-- ead02ee. Return to version = "*" once a newer tag ships.
+	-- setup() errors when no workspace directory exists, so on machines without
+	-- the vault stay unloaded and leave every markdown buffer to render-markdown.
+	cond = function()
+		return vim.fn.isdirectory(require("vault")) == 1
+	end,
 	ft = "markdown",
 	cmd = "Obsidian",
 	keys = {
