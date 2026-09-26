@@ -48,15 +48,18 @@ return {
 			})
 			-- nvim-treesitter master stops at Neovim 0.11 and registers its query
 			-- directives with `all = false`, an option 0.12 removed. Handlers now get a
-			-- list of nodes instead of one, so this directive throws and aborts every
-			-- injection in the buffer -- a single fenced code block leaves the whole
-			-- markdown file unhighlighted and unrendered.
+			-- list of nodes instead of one, so these directives throw and abort every
+			-- injection in the buffer -- a single fenced code block or heredoc leaves
+			-- the whole file unhighlighted.
 			-- TODO(nvim-treesitter-main-migration): drop when treesitter moves to `main`.
 			require("nvim-treesitter.query_predicates")
+			local function captured_node(match, capture_id)
+				local node = match[capture_id]
+				return type(node) == "table" and node[1] or node
+			end
 			local info_string_aliases = { ex = "elixir", pl = "perl", sh = "bash", uxn = "uxntal", ts = "typescript" }
 			vim.treesitter.query.add_directive("set-lang-from-info-string!", function(match, _, bufnr, pred, metadata)
-				local node = match[pred[2]]
-				node = type(node) == "table" and node[1] or node
+				local node = captured_node(match, pred[2])
 				if not node then
 					return
 				end
@@ -64,6 +67,16 @@ return {
 				metadata["injection.language"] = vim.filetype.match({ filename = "a." .. alias })
 					or info_string_aliases[alias]
 					or alias
+			end, { force = true })
+			vim.treesitter.query.add_directive("downcase!", function(match, _, bufnr, pred, metadata)
+				local id = pred[2]
+				local node = captured_node(match, id)
+				if not node then
+					return
+				end
+				local text = vim.treesitter.get_node_text(node, bufnr, { metadata = metadata[id] })
+				metadata[id] = metadata[id] or {}
+				metadata[id].text = text:lower()
 			end, { force = true })
 
 			-- Diagnostic display
