@@ -12,8 +12,29 @@ return {
 		"declancm/maximize.nvim",
 	},
 	config = function()
+		local uv = vim.uv or vim.loop
+
+		-- Swap for `st.mtime.sec` to sort by last-modified instead.
+		local function created(path)
+			local st = uv.fs_stat(path)
+			return st and st.birthtime and st.birthtime.sec or 0
+		end
+
 		require("neo-tree").setup({
 			close_if_last_window = false,
+			-- neo-tree validates this against synthetic items whose paths do not
+			-- exist, so it has to stay total: never index a nil stat, always
+			-- return a boolean.
+			sort_function = function(a, b)
+				if a.type ~= b.type then
+					return a.type < b.type
+				end
+				local ca, cb = created(a.path), created(b.path)
+				if ca == cb then
+					return a.path < b.path
+				end
+				return ca < cb
+			end,
 			sort_by = "case_sensitive",
 			renderer = {
 				group_empty = true,
